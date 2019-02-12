@@ -80,6 +80,7 @@ export function saveFaveStar(sliceId, isStarred) {
 
 export const SET_FIELD_VALUE = 'SET_FIELD_VALUE';
 export function setControlValue(controlName, value, validationErrors) {
+  console.log('val==', value);
   return { type: SET_FIELD_VALUE, controlName, value, validationErrors };
 }
 
@@ -107,3 +108,4 @@ export const CREATE_NEW_SLICE = 'CREATE_NEW_SLICE';
 export function createNewSlice(can_add, can_download, can_overwrite, slice, form_data) {
   return { type: CREATE_NEW_SLICE, can_add, can_download, can_overwrite, slice, form_data };
 }
+

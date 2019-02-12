@@ -165,7 +165,7 @@ export default class ResultSet extends React.PureComponent {
         <div>
           <Alert bsStyle="info">
             {t('Table')} [<strong>{query.tempTable}</strong>] {t('was ' +
-            'created')} &nbsp;
+              'created')} &nbsp;
             <Button
               bsSize="small"
               className="m-r-5"

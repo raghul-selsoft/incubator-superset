@@ -54,7 +54,7 @@ class ExploreResultsButton extends React.PureComponent {
       this.dialog.show({
         title: t('Explore'),
         body: msg,
-        actions: [Dialog.DefaultAction('Ok', () => {}, 'btn-primary')],
+        actions: [Dialog.DefaultAction('Ok', () => { }, 'btn-primary')],
         bsSize: 'large',
         bsStyle: 'warning',
         onHide: (dialog) => {

@@ -15,6 +15,7 @@ const defaultProps = {
 const BUTTON_WRAPPER_STYLE = { display: 'inline-block', cursor: 'not-allowed' };
 
 export default function Button(props) {
+  // console.log('===>>>',props);
   const buttonProps = Object.assign({}, props);
   const tooltip = props.tooltip;
   const placement = props.placement;

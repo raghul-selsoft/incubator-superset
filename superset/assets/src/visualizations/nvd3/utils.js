@@ -71,13 +71,13 @@ export function generateRichLineTooltipContent(d, timeFormatter, valueFormatter)
   d.series.forEach((series) => {
     tooltip += (
       `<tr class="${series.highlight ? 'emph' : ''}">` +
-        `<td class='legend-color-guide' style="opacity: ${series.highlight ? '1' : '0.75'};"">` +
-          '<div ' +
-            `style="border: 2px solid ${series.highlight ? 'black' : 'transparent'}; background-color: ${series.color};"` +
-          '></div>' +
-        '</td>' +
-        `<td>${dompurify.sanitize(series.key)}</td>` +
-        `<td>${valueFormatter(series.value)}</td>` +
+      `<td class='legend-color-guide' style="opacity: ${series.highlight ? '1' : '0.75'};"">` +
+      '<div ' +
+      `style="border: 2px solid ${series.highlight ? 'black' : 'transparent'}; background-color: ${series.color};"` +
+      '></div>' +
+      '</td>' +
+      `<td>${dompurify.sanitize(series.key)}</td>` +
+      `<td>${valueFormatter(series.value)}</td>` +
       '</tr>'
     );
   });
@@ -127,7 +127,7 @@ export function generateBubbleTooltipContent({
   let s = '<table>';
   s += (
     `<tr><td style="color: ${point.color};">` +
-      `<strong>${point[entity]}</strong> (${point.group})` +
+    `<strong>${point[entity]}</strong> (${point.group})` +
     '</td></tr>'
   );
   s += createHTMLRow(getLabel(xField), xFormatter(point.x));

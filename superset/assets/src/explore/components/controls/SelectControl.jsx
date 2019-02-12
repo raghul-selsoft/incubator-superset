@@ -41,13 +41,14 @@ const defaultProps = {
   isLoading: false,
   label: null,
   multi: false,
-  onChange: () => {},
-  onFocus: () => {},
+  onChange: () => { },
+  onFocus: () => { },
   showHeader: true,
   optionRenderer: opt => opt.label,
   valueRenderer: opt => opt.label,
   valueKey: 'value',
   noResultsText: t('No results found'),
+  options: []
 };
 
 export default class SelectControl extends React.PureComponent {
@@ -58,8 +59,9 @@ export default class SelectControl extends React.PureComponent {
   }
   componentWillReceiveProps(nextProps) {
     if (nextProps.choices !== this.props.choices ||
-        nextProps.options !== this.props.options) {
+      nextProps.options !== this.props.options) {
       const options = this.getOptions(nextProps);
+      // console.log('options', options);
       this.setState({ options });
     }
   }
@@ -72,6 +74,7 @@ export default class SelectControl extends React.PureComponent {
     this.props.onChange(optionValue);
   }
   getOptions(props) {
+    // console.log('props',props);
     if (props.options) {
       return props.options;
     }
@@ -135,6 +138,7 @@ export default class SelectControl extends React.PureComponent {
       refFunc: this.props.refFunc,
       filterOption: this.props.filterOption,
     };
+    // console.log('Selct Props', selectProps);
     return (
       <div>
         {this.props.showHeader &&
@@ -145,6 +149,13 @@ export default class SelectControl extends React.PureComponent {
     );
   }
 }
+
+// const Child = (props) => {
+//   SelectControl.ChildProps = props;
+//   return (
+//     < div />
+//   )
+// }
 
 SelectControl.propTypes = propTypes;
 SelectControl.defaultProps = defaultProps;

@@ -39,13 +39,14 @@ const BLANK = {};
 const defaultProps = {
   addFilter: () => BLANK,
   filters: BLANK,
-  setControlValue() {},
+  setControlValue() { },
   triggerRender: false,
 };
 
 class Chart extends React.PureComponent {
   componentDidMount() {
     if (this.props.triggerQuery) {
+      // console.log('props', this.props);
       this.props.actions.runQuery(
         this.props.formData,
         false,
@@ -81,6 +82,7 @@ class Chart extends React.PureComponent {
       queryResponse,
       refreshOverlayVisible,
     } = this.props;
+    // console.log('>>>',this.props);
 
     const isLoading = chartStatus === 'loading';
 
@@ -118,10 +120,18 @@ class Chart extends React.PureComponent {
               {...this.props}
             />
           </div>
+          <Child options={this.props} />
         </div>
       </ErrorBoundary>
     );
   }
+}
+
+const Child = (props) => {
+  Chart.ChildProps = props;
+  return (
+    < div />
+  )
 }
 
 Chart.propTypes = propTypes;

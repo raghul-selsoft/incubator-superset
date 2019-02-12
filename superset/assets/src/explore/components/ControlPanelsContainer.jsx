@@ -52,6 +52,7 @@ class ControlPanelsContainer extends React.Component {
     return control;
   }
   sectionsToRender() {
+    // console.log(this.props);
     return sectionsToRender(this.props.form_data.viz_type, this.props.datasource_type);
   }
   removeAlert() {
@@ -60,9 +61,9 @@ class ControlPanelsContainer extends React.Component {
   renderControlPanelSection(section) {
     const ctrls = this.props.controls;
     const hasErrors = section.controlSetRows.some(rows => rows.some(s => (
-        ctrls[s] &&
-        ctrls[s].validationErrors &&
-        (ctrls[s].validationErrors.length > 0)
+      ctrls[s] &&
+      ctrls[s].validationErrors &&
+      (ctrls[s].validationErrors.length > 0)
     )));
     return (
       <ControlPanelSection
@@ -101,6 +102,7 @@ class ControlPanelsContainer extends React.Component {
   }
   render() {
     const allSectionsToRender = this.sectionsToRender();
+    // console.log('allSectionsToRender:', allSectionsToRender);
     const querySectionsToRender = [];
     const displaySectionsToRender = [];
     allSectionsToRender.forEach((section) => {
@@ -117,6 +119,9 @@ class ControlPanelsContainer extends React.Component {
         displaySectionsToRender.push(section);
       }
     });
+    // console.log('querySectionsToRender', querySectionsToRender);
+    // console.log('displaySectionsToRender:', displaySectionsToRender);
+
 
     return (
       <div className="scrollbar-container">

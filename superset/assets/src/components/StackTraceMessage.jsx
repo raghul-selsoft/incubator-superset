@@ -3,6 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Alert, Collapse } from 'react-bootstrap';
 
+
 const propTypes = {
   message: PropTypes.node.isRequired,
   link: PropTypes.string,
@@ -25,6 +26,7 @@ class StackTraceMessage extends React.PureComponent {
   }
 
   render() {
+    console.log('Message ==>', this.props);
     return (
       <div className={`stack-trace-container${this.props.stackTrace ? ' has-trace' : ''}`}>
         <Alert
@@ -33,14 +35,14 @@ class StackTraceMessage extends React.PureComponent {
         >
           {this.props.message}
           {this.props.link &&
-          <a
-            href={this.props.link}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            (Request Access)
+            <a
+              href={this.props.link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              (Request Access)
           </a>
-       }
+          }
         </Alert>
         {this.props.stackTrace &&
           <Collapse in={this.state.showStackTrace}>

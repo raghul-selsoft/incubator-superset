@@ -43,7 +43,7 @@ class HighlightedSql extends React.Component {
       }
       return line;
     })
-    .join('\n');
+      .join('\n');
   }
   triggerNode() {
     const shownSql = this.props.shrink ? this.shrinkSql(this.props.sql) : this.props.sql;

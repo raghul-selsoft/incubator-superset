@@ -345,7 +345,8 @@ class Druid(BaseSupersetView):
         Calling this endpoint will cause a scan for new
         datasources only and add them.
         """
-        return self.refresh_datasources(refreshAll=False)
+        dataSource = self.refresh_datasources(refreshAll=False) 
+        return dataSource
 
 
 appbuilder.add_view_no_menu(Druid)

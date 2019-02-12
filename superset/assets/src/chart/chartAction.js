@@ -141,6 +141,8 @@ export function addChart(chart, key) {
 
 export const RUN_QUERY = 'RUN_QUERY';
 export function runQuery(formData, force = false, timeout = 60, key) {
+  // console.log('fd',formData);
+  // console.log('key',key);
   return (dispatch) => {
     const { url, payload } = getExploreUrlAndPayload({
       formData,

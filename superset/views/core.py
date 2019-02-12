@@ -46,7 +46,7 @@ from superset.utils.dates import now_as_float
 from .base import (
     api, BaseSupersetView,
     check_ownership,
-    CsvResponse, data_payload_response, DeleteMixin, generate_download_headers,
+    CsvResponse, XlsxResponse, data_payload_response, DeleteMixin, generate_download_headers,
     get_error_msg, handle_api_exception, json_error_response, json_success,
     SupersetFilter, SupersetModelView, YamlExportMixin,
 )
@@ -294,7 +294,6 @@ appbuilder.add_link(
     category='Manage',
     category_label=__('Manage'),
     category_icon='fa-wrench')
-
 
 appbuilder.add_view(
     DatabaseView,
@@ -1065,6 +1064,7 @@ class Superset(BaseSupersetView):
     @expose('/slice/<slice_id>/')
     def slice(self, slice_id):
         form_data, slc = self.get_form_data(slice_id, use_slice_data=True)
+        print('slice ====>>', slc)
         if not slc:
             abort(404)
         endpoint = '/superset/explore/?form_data={}'.format(
@@ -1109,7 +1109,7 @@ class Superset(BaseSupersetView):
 
     def generate_json(
             self, datasource_type, datasource_id, form_data,
-            csv=False, query=False, force=False, results=False,
+            csv=False, xlsx=False, query=False, force=False, results=False,
             samples=False,
     ):
         viz_obj = self.get_viz(
@@ -1126,6 +1126,13 @@ class Superset(BaseSupersetView):
                 status=200,
                 headers=generate_download_headers('csv'),
                 mimetype='application/csv')
+
+        if xlsx:
+            return XlsxResponse(
+                viz_obj.get_xlsx(),
+                status=200,
+                headers=generate_download_headers('xlsx'),
+                mimetype='application/xlsx')
 
         if query:
             return self.get_query_string_response(viz_obj)
@@ -1188,12 +1195,14 @@ class Superset(BaseSupersetView):
 
         TODO: break into one endpoint for each return shape"""
         csv = request.args.get('csv') == 'true'
+        xlsx = request.args.get('xlsx') == 'true'
         query = request.args.get('query') == 'true'
         results = request.args.get('results') == 'true'
         samples = request.args.get('samples') == 'true'
         force = request.args.get('force') == 'true'
 
         form_data = self.get_form_data()[0]
+        print('formDate>>>>>', form_data)
         datasource_id, datasource_type = self.datasource_info(
             datasource_id, datasource_type, form_data)
 
@@ -1202,6 +1211,7 @@ class Superset(BaseSupersetView):
             datasource_id=datasource_id,
             form_data=form_data,
             csv=csv,
+            xlsx=xlsx,
             query=query,
             results=results,
             force=force,
@@ -1336,6 +1346,7 @@ class Superset(BaseSupersetView):
             'forced_height': request.args.get('height'),
             'common': self.common_bootsrap_payload(),
         }
+        print('bootstrapData ===>>>', bootstrap_data)
         table_name = datasource.table_name \
             if datasource_type == 'table' \
             else datasource.datasource_name
@@ -1905,7 +1916,7 @@ class Superset(BaseSupersetView):
         if not user_id:
             user_id = g.user.id
         Slice = models.Slice  # noqa
-        FavStar = models.FavStar # noqa
+        FavStar = models.FavStar  # noqa
         qry = (
             db.session.query(Slice,
                              FavStar.dttm).join(
@@ -2574,6 +2585,7 @@ class Superset(BaseSupersetView):
     @expose('/csv/<client_id>')
     @log_this
     def csv(self, client_id):
+        print('clientid=====>>>', client_id)
         """Download the query results as csv."""
         logging.info('Exporting CSV file [{}]'.format(client_id))
         query = (
@@ -2765,6 +2777,7 @@ class Superset(BaseSupersetView):
             'user': bootstrap_user_data(),
             'common': self.common_bootsrap_payload(),
         }
+        print('payload ===>>>', payload)
 
         return self.render_template(
             'superset/basic.html',

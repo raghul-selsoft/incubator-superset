@@ -64,6 +64,8 @@ class Toast extends React.Component {
     const {
       toast: { toastType, text },
     } = this.props;
+    console.log('state ==', this.state);
+    console.log('props ==', this.props);
 
     return (
       <Alert

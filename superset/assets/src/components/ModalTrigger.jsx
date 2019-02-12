@@ -1,9 +1,10 @@
 import React, { Fragment } from 'react';
 import PropTypes from 'prop-types';
-import { Modal, MenuItem } from 'react-bootstrap';
+import { Modal, MenuItem, Table } from 'react-bootstrap';
 import cx from 'classnames';
 
 import Button from './Button';
+import { props } from 'bluebird';
 
 const propTypes = {
   animation: PropTypes.bool,
@@ -22,8 +23,8 @@ const propTypes = {
 
 const defaultProps = {
   animation: true,
-  beforeOpen: () => {},
-  onExit: () => {},
+  beforeOpen: () => { },
+  onExit: () => { },
   isButton: false,
   isMenuItem: false,
   bsSize: null,
@@ -36,19 +37,32 @@ export default class ModalTrigger extends React.Component {
     super(props);
     this.state = {
       showModal: false,
+      tableEdit: false
     };
     this.open = this.open.bind(this);
     this.close = this.close.bind(this);
+    this.tableActionEvent = this.tableActionEvent.bind(this);
   }
 
   close() {
-    this.setState(() => ({ showModal: false }));
+    this.setState(() => ({ showModal: false, tableEdit: false, }));
   }
 
   open(e) {
     e.preventDefault();
     this.props.beforeOpen();
-    this.setState(() => ({ showModal: true }));
+    this.setState(() => ({
+      showModal: true,
+      tableEdit: false,
+    }));
+  }
+
+  tableActionEvent(e) {
+    this.setState(() => ({
+      showModal: true,
+      tableEdit: true,
+      event: e
+    }));
   }
   renderModal() {
     return (
@@ -77,10 +91,75 @@ export default class ModalTrigger extends React.Component {
     );
   }
 
+
+
+  renderTableModal() {
+    console.log('state', this.state.event);
+
+    return (
+      <Modal
+        animation={this.props.animation}
+        show={this.state.showModal}
+        onHide={this.close}
+        onExit={this.props.onExit}
+        bsSize={this.props.bsSize}
+        className={this.props.className}
+      >
+
+        <Modal.Header closeButton>
+          <Modal.Title>Table Model</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <Table striped bordered hover>
+            <thead>
+              {Object.keys(this.state.event).map((key) => {
+                return (
+                  <th>{key}</th>
+                )
+              })}
+            </thead>
+            <tbody>
+              {Object.values(this.state.event).map((val) => {
+                return (
+                  <td>{val}</td>
+                )
+              })}
+            </tbody>
+          </Table>
+
+
+        </Modal.Body>
+        {/* {this.props.modalFooter &&
+          <Modal.Footer>
+            {this.props.modalFooter}
+          </Modal.Footer>
+        } */}
+      </Modal>
+
+    );
+  }
+
   render() {
     const classNames = cx({
       'btn btn-default btn-sm': this.props.isButton,
     });
+    if (this.state.tableEdit) {
+      return (
+        <Fragment>
+          <Button
+            className="modal-trigger"
+            tooltip={this.props.tooltip}
+            onClick={this.open}
+          >
+            {this.props.triggerNode}
+          </Button>
+          {this.renderTableModal()}
+          <Child click={this.tableActionEvent} />
+        </Fragment>
+
+      );
+    }
     if (this.props.isButton) {
       return (
         <Fragment>
@@ -92,7 +171,9 @@ export default class ModalTrigger extends React.Component {
             {this.props.triggerNode}
           </Button>
           {this.renderModal()}
+          <Child click={this.tableActionEvent} />
         </Fragment>
+
       );
     } else if (this.props.isMenuItem) {
       return (
@@ -101,6 +182,7 @@ export default class ModalTrigger extends React.Component {
             {this.props.triggerNode}
           </MenuItem>
           {this.renderModal()}
+          <Child click={this.tableActionEvent} />
         </Fragment>
       );
     }
@@ -111,10 +193,18 @@ export default class ModalTrigger extends React.Component {
           {this.props.triggerNode}
         </span>
         {this.renderModal()}
+        <Child click={this.open} props={this.props} />
       </Fragment>
     );
   }
 }
 
+
+const Child = (props) => {
+  ModalTrigger.ChildProps = props;
+  return (
+    <div />
+  )
+}
 ModalTrigger.propTypes = propTypes;
 ModalTrigger.defaultProps = defaultProps;

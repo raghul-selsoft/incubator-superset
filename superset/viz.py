@@ -214,7 +214,7 @@ class BaseViz(object):
         self.status = self.results.status
         self.error_message = self.results.error_message
 
-        df = self.results.df
+        df = self.results.df        
         # Transform the timestamp we received from database to pandas supported
         # datetime format. If no python_date_format is specified, the pattern will
         # be considered as the default ISO date format
@@ -487,6 +487,11 @@ class BaseViz(object):
         df = self.get_df()
         include_index = not isinstance(df.index, pd.RangeIndex)
         return df.to_csv(index=include_index, **config.get('CSV_EXPORT'))
+
+    def get_xlsx(self):
+        df = self.get_df()
+        include_index = not isinstance(df.index, pd.RangeIndex)
+        return df.to_csv(index=include_index, **config.get('XLSX_EXPORT'))
 
     def get_data(self, df):
         return df.to_dict(orient='records')
@@ -1307,7 +1312,7 @@ class NVD3DualLineViz(NVD3Viz):
             raise Exception(_('Pick a metric for right axis!'))
         if m1 == m2:
             raise Exception(_('Please choose different metrics'
-                            ' on left and right axis'))
+                              ' on left and right axis'))
         return d
 
     def to_series(self, df, classed=''):
@@ -1519,9 +1524,10 @@ class DistributionBarViz(DistributionPieViz):
         return d
 
     def get_data(self, df):
+        print('Self -->', self)       
         fd = self.form_data
+        print('df -->', df)
         metrics = self.metric_labels
-
         row = df.groupby(self.groupby).sum()[metrics[0]].copy()
         row.sort_values(ascending=False, inplace=True)
         columns = fd.get('columns') or []
@@ -1536,6 +1542,7 @@ class DistributionBarViz(DistributionPieViz):
         pt = pt.reindex(row.index)
         chart_data = []
         for name, ys in pt.items():
+            print('ys===', pt[name], str)
             if pt[name].dtype.kind not in 'biufc' or name in self.groupby:
                 continue
             if isinstance(name, str):
@@ -1559,6 +1566,7 @@ class DistributionBarViz(DistributionPieViz):
                 'values': values,
             }
             chart_data.append(d)
+            print('chartData ------>', chart_data)
         return chart_data
 
 

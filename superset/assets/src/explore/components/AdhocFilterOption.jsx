@@ -20,6 +20,7 @@ const propTypes = {
 
 export default class AdhocFilterOption extends React.PureComponent {
   constructor(props) {
+    // console.log(props);
     super(props);
     this.closeFilterEditOverlay = this.closeFilterEditOverlay.bind(this);
     this.onPopoverResize = this.onPopoverResize.bind(this);
@@ -29,7 +30,7 @@ export default class AdhocFilterOption extends React.PureComponent {
   }
 
   onPopoverResize() {
-   this.forceUpdate();
+    this.forceUpdate();
   }
 
   onOverlayEntered() {
@@ -90,4 +91,6 @@ export default class AdhocFilterOption extends React.PureComponent {
     );
   }
 }
+
+
 AdhocFilterOption.propTypes = propTypes;

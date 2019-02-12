@@ -13,6 +13,7 @@ const defaultProps = {
 };
 
 export default function ColumnOption({ column, showType }) {
+
   const hasExpression = column.expression && column.expression !== column.column_name;
 
   let columnType = column.type;

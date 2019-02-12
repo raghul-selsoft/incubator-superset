@@ -8,6 +8,12 @@ import { getNumberFormatter, NumberFormats } from '@superset-ui/number-format';
 import { getTimeFormatter } from '@superset-ui/time-format';
 import { fixDataTableBodyHeight } from '../../modules/utils';
 import './Table.css';
+import React from 'react';
+import ModalTrigger from 'src/components/ModalTrigger';
+import { t } from '@superset-ui/translation';
+import { Modal, MenuItem } from 'react-bootstrap';
+import { SaveModal } from 'src/explore/components/SaveModal';
+
 
 dt(window, $);
 
@@ -49,7 +55,7 @@ const propTypes = {
 
 const formatValue = getNumberFormatter(NumberFormats.INTEGER);
 const formatPercent = getNumberFormatter(NumberFormats.PERCENT_3_POINT);
-function NOOP() {}
+function NOOP() { }
 
 function TableVis(element, props) {
   const {
@@ -107,6 +113,11 @@ function TableVis(element, props) {
       'table-condensed table-hover dataTable no-footer', true)
     .attr('width', '100%');
 
+  columns.push({ key: 'Action', label: 'Action' });
+  console.log('table', columns);
+  console.log('props', props);
+  // columns.reverse();
+
   table.append('thead').append('tr')
     .selectAll('th')
     .data(columns.map(c => c.label))
@@ -121,7 +132,10 @@ function TableVis(element, props) {
     .append('tr')
     .selectAll('td')
     .data(row => columns.map(({ key, format }) => {
+      const eventData = row;
       const val = row[key];
+      // console.log(val);
+      // eventData.push(val);
       let html;
       const isMetric = metrics.indexOf(key) >= 0;
       if (key === '__timestamp') {
@@ -136,12 +150,16 @@ function TableVis(element, props) {
       if (key[0] === '%') {
         html = formatPercent(val);
       }
+      if (key === 'Action') {
+        html = `<button>Edit</button>`;
+      }
 
       return {
         col: key,
         val,
         html,
         isMetric,
+        eventData
       };
     }))
     .enter()
@@ -200,6 +218,10 @@ function TableVis(element, props) {
           d3.select(this).classed('filtered', true);
           onAddFilter(d.col, [d.val]);
         }
+      }
+      if (d.col === 'Action') {
+        console.log('d', d);
+        ModalTrigger.ChildProps.click(d.eventData);
       }
     })
     .style('cursor', d => (!d.isMetric) ? 'pointer' : '')

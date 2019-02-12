@@ -63,7 +63,7 @@ export default class DisplayQueryButton extends React.PureComponent {
       url,
       postPayload: { form_data: payload },
     })
-      .then(({ json }) => {
+      .then(({ json }) => {       
         this.setState({
           language: json.language,
           query: json.query,
@@ -93,6 +93,7 @@ export default class DisplayQueryButton extends React.PureComponent {
     } else if (this.state.error) {
       return <pre>{this.state.error}</pre>;
     } else if (this.state.query) {
+      console.log(this.state.query);
       return (
         <div>
           <CopyToClipboard

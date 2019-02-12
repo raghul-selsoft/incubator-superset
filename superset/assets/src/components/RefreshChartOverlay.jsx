@@ -11,6 +11,7 @@ const propTypes = {
 
 class RefreshChartOverlay extends React.PureComponent {
   render() {
+    // console.log('Query', this.props);
     return (
       <div
         style={{ height: this.props.height, width: this.props.width }}
@@ -24,10 +25,18 @@ class RefreshChartOverlay extends React.PureComponent {
           >
             {t('Run Query')}
           </Button>
+          <Child runQuery={this.props.onQuery} />
         </div>
+
       </div>
     );
   }
+}
+const Child = (props) => {
+  RefreshChartOverlay.ChildProps = props;
+  return (
+    < div />
+  )
 }
 
 RefreshChartOverlay.propTypes = propTypes;

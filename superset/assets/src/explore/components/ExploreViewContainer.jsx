@@ -298,6 +298,8 @@ class ExploreViewContainer extends React.Component {
 ExploreViewContainer.propTypes = propTypes;
 
 function mapStateToProps(state) {
+  ExploreViewContainer.stateProps = state;
+  // console.log('State', state);
   const { explore, charts, impressionId } = state;
   const form_data = getFormDataFromControls(explore.controls);
   const chartKey = Object.keys(charts)[0];
@@ -326,7 +328,9 @@ function mapStateToProps(state) {
   };
 }
 
+
 function mapDispatchToProps(dispatch) {
+  // console.log('disapatch',dispatch);
   const actions = Object.assign({}, exploreActions, saveModalActions, chartActions);
   return {
     actions: bindActionCreators(actions, dispatch),

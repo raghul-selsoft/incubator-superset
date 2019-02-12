@@ -57,6 +57,7 @@ export default function transformProps(chartProps) {
   } = formData;
 
   const rawData = payload.data || [];
+  console.log('raw data:', payload);
   const data = Array.isArray(rawData)
     ? rawData.map(row => ({
       ...row,

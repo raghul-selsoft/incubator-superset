@@ -31,13 +31,14 @@ const propTypes = {
 
 const defaultProps = {
   name: '',
-  onChange: () => {},
+  onChange: () => { },
   columns: [],
   savedMetrics: [],
   formData: {},
 };
 
-function isDictionaryForAdhocFilter(value) {
+export function isDictionaryForAdhocFilter(value) {
+  console.log('===>', value);
   return value && !(value instanceof AdhocFilter) && value.expressionType;
 }
 
@@ -82,7 +83,7 @@ export default class AdhocFilterControl extends React.Component {
       this.setState({
         values: (nextProps.value || []).map(
           filter => (isDictionaryForAdhocFilter(filter) ? new AdhocFilter(filter) : filter
-        )),
+          )),
       });
     }
   }
@@ -97,6 +98,7 @@ export default class AdhocFilterControl extends React.Component {
   }
 
   onChange(opts) {
+    // console.log('opts', opts);
     this.props.onChange(opts.map((option) => {
       if (option.saved_metric_name) {
         return new AdhocFilter({
@@ -123,13 +125,23 @@ export default class AdhocFilterControl extends React.Component {
           clause: CLAUSES.HAVING,
         });
       } else if (option.column_name) {
-        return new AdhocFilter({
-          expressionType: EXPRESSION_TYPES.SIMPLE,
-          subject: option.column_name,
-          operator: OPERATORS['=='],
-          comparator: '',
-          clause: CLAUSES.WHERE,
-        });
+        if (opts[1]) {
+          return new AdhocFilter({
+            expressionType: EXPRESSION_TYPES.SIMPLE,
+            subject: option.column_name,
+            operator: OPERATORS['=='],
+            comparator: opts[1],
+            clause: CLAUSES.WHERE,
+          });
+        } else {
+          return new AdhocFilter({
+            expressionType: EXPRESSION_TYPES.SIMPLE,
+            subject: option.column_name,
+            operator: OPERATORS['=='],
+            comparator: '',
+            clause: CLAUSES.WHERE,
+          });
+        }
       } else if (option instanceof AdhocFilter) {
         return option;
       }
@@ -149,8 +161,8 @@ export default class AdhocFilterControl extends React.Component {
       ...[...(props.formData.metrics || []), props.formData.metric].map(metric => (
         metric && (
           typeof metric === 'string' ?
-          { saved_metric_name: metric } :
-          new AdhocMetric(metric)
+            { saved_metric_name: metric } :
+            new AdhocMetric(metric)
         )
       )),
     ].filter(option => option);
@@ -190,9 +202,17 @@ export default class AdhocFilterControl extends React.Component {
           valueRenderer={this.valueRenderer}
           selectWrap={VirtualizedSelect}
         />
+        <Child options={this.props} filter={this.onChange} />
       </div>
     );
   }
+}
+
+const Child = (props) => {
+  AdhocFilterControl.ChildProps = props;
+  return (
+    < div />
+  )
 }
 
 AdhocFilterControl.propTypes = propTypes;

@@ -64,6 +64,7 @@ def data_payload_response(payload_json, has_error=False):
 
 
 def generate_download_headers(extension, filename=None):
+    print('extension=========>>>',extension)
     filename = filename if filename else datetime.now().strftime('%Y%m%d_%H%M%S')
     content_disp = 'attachment; filename={}.{}'.format(filename, extension)
     headers = {
@@ -305,6 +306,12 @@ class CsvResponse(Response):
     Override Response to take into account csv encoding from config.py
     """
     charset = conf.get('CSV_EXPORT').get('encoding', 'utf-8')
+
+class XlsxResponse(Response):
+    """
+    Override Response to take into account xlsx encoding from config.py
+    """
+    charset = conf.get('XLSX_EXPORT').get('encoding', 'utf-8')
 
 
 def check_ownership(obj, raise_if_false=True):

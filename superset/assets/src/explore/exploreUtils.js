@@ -36,9 +36,10 @@ export function getAnnotationJsonUrl(slice_id, form_data, isNative) {
 export function getURIDirectory(formData, endpointType = 'base') {
   // Building the directory part of the URI
   let directory = '/superset/explore/';
-  if (['json', 'csv', 'query', 'results', 'samples'].indexOf(endpointType) >= 0) {
+  if (['json', 'csv', 'query', 'results', 'samples', 'xlsx'].indexOf(endpointType) >= 0) {
     directory = '/superset/explore_json/';
   }
+  // console.log('directory', directory);
   return directory;
 }
 
@@ -102,11 +103,16 @@ export function getExploreUrlAndPayload({
   if (formData.slice_id) {
     search.form_data = JSON.stringify({ slice_id: formData.slice_id });
   }
+  // console.log('endpointType', endpointType);
+  // console.log('search.form_data', search.form_data);
   if (force) {
     search.force = 'true';
   }
   if (endpointType === 'csv') {
     search.csv = 'true';
+  }
+  if (endpointType === 'xlsx') {
+    search.xlsx = 'true';
   }
   if (endpointType === 'standalone') {
     search.standalone = 'true';
@@ -143,6 +149,8 @@ export function exportChart(formData, endpointType) {
     endpointType,
     allowDomainSharding: false,
   });
+  // console.log('url', url);
+  // console.log('payload', payload);
 
   const exploreForm = document.createElement('form');
   exploreForm.action = url;
@@ -160,6 +168,7 @@ export function exportChart(formData, endpointType) {
   exploreForm.appendChild(data);
 
   document.body.appendChild(exploreForm);
+  // console.log('exploreForm', exploreForm);
   exploreForm.submit();
   document.body.removeChild(exploreForm);
 }

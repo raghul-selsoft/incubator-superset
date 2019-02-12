@@ -37,6 +37,7 @@ export function removeToast(id) {
 // Different types of toasts
 export const ADD_INFO_TOAST = 'ADD_INFO_TOAST';
 export function addInfoToast(text) {
+  console.log('Test',text);
   return dispatch =>
     dispatch(addToast({ text, toastType: INFO_TOAST, duration: 4000 }));
 }

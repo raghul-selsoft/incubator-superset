@@ -2,6 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import controlMap from './controls';
+import { connect } from 'react-redux';
+
 
 const controlTypes = Object.keys(controlMap);
 
@@ -46,6 +48,7 @@ export default class Control extends React.PureComponent {
     this.state = { hovered: false };
     this.validate = this.validate.bind(this);
     this.onChange = this.onChange.bind(this);
+    // this.onClickEvent = this.onClickEvent.bind(this);
   }
   componentDidMount() {
     this.validateAndSetValue(this.props.value, []);
@@ -53,6 +56,8 @@ export default class Control extends React.PureComponent {
   onChange(value, errors) {
     this.validateAndSetValue(value, errors);
   }
+
+
   setHover(hovered) {
     this.setState({ hovered });
   }
@@ -84,6 +89,8 @@ export default class Control extends React.PureComponent {
     return validationErrors;
   }
   render() {
+    // console.log('control props:', this.props);
+    // console.log('control state:', this.state);
     const ControlType = controlMap[this.props.type];
     const divStyle = this.props.hidden ? { display: 'none' } : null;
     return (
@@ -98,10 +105,24 @@ export default class Control extends React.PureComponent {
           hovered={this.state.hovered}
           {...this.props}
         />
+        <Child options={this.props} filter={this.onClickEvent} />
       </div>
     );
   }
 }
 
+const Child = (props) => {
+  Control.ChildProps = props;
+  return (
+    < div />
+  )
+}
+
+
 Control.propTypes = propTypes;
 Control.defaultProps = defaultProps;
+
+
+
+
+

@@ -14,6 +14,11 @@ text.nv-axislabel {
 .slice_container.dist_bar {
   overflow-x: auto !important;
 }
+.background {
+  color: black;
+  font-size:20px;
+  text-anchor:middle;
+}
 
 .dist_bar svg.nvd3-svg {
   width: auto;
@@ -94,3 +99,4 @@ g.time-shift-8 path, line.time-shift-8 {
 g.time-shift-9 path, line.time-shift-9 {
   stroke-dasharray: 5, 5, 1, 5;
 }
+

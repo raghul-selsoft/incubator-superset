@@ -130,27 +130,27 @@ function Sunburst(element, props) {
     const entering = g.enter().append('svg:g');
 
     entering.append('svg:polygon')
-        .attr('points', breadcrumbPoints)
-        .style('fill', function (d) {
-          return colorByCategory ?
-            colorFn(d.name) :
-            colorScale(d.m2 / d.m1);
-        });
+      .attr('points', breadcrumbPoints)
+      .style('fill', function (d) {
+        return colorByCategory ?
+          colorFn(d.name) :
+          colorScale(d.m2 / d.m1);
+      });
 
     entering.append('svg:text')
-        .attr('x', (breadcrumbDims.width + breadcrumbDims.tipTailWidth) / 2)
-        .attr('y', breadcrumbDims.height / 4)
-        .attr('dy', '0.35em')
-        .style('fill', function (d) {
-          // Make text white or black based on the lightness of the background
-          const col = d3.hsl(colorByCategory ?
-            colorFn(d.name) :
-            colorScale(d.m2 / d.m1));
-          return col.l < 0.5 ? 'white' : 'black';
-        })
-        .attr('class', 'step-label')
-        .text(function (d) { return d.name.replace(/_/g, ' '); })
-        .call(wrapSvgText, breadcrumbDims.width, breadcrumbDims.height / 2);
+      .attr('x', (breadcrumbDims.width + breadcrumbDims.tipTailWidth) / 2)
+      .attr('y', breadcrumbDims.height / 4)
+      .attr('dy', '0.35em')
+      .style('fill', function (d) {
+        // Make text white or black based on the lightness of the background
+        const col = d3.hsl(colorByCategory ?
+          colorFn(d.name) :
+          colorScale(d.m2 / d.m1));
+        return col.l < 0.5 ? 'white' : 'black';
+      })
+      .attr('class', 'step-label')
+      .text(function (d) { return d.name.replace(/_/g, ' '); })
+      .call(wrapSvgText, breadcrumbDims.width, breadcrumbDims.height / 2);
 
     // Set position for entering and updating nodes.
     g.attr('transform', function (d, i) {
@@ -162,10 +162,10 @@ function Sunburst(element, props) {
 
     // Now move and update the percentage at the end.
     breadcrumbs.select('.end-label')
-        .attr('x', (sequenceArray.length + 0.5) * (breadcrumbDims.width + breadcrumbDims.spacing))
-        .attr('y', breadcrumbDims.height / 2)
-        .attr('dy', '0.35em')
-        .text(percentageString);
+      .attr('x', (sequenceArray.length + 0.5) * (breadcrumbDims.width + breadcrumbDims.spacing))
+      .attr('y', breadcrumbDims.height / 2)
+      .attr('dy', '0.35em')
+      .text(percentageString);
 
     // Make the breadcrumb trail visible, if it's hidden.
     breadcrumbs.style('visibility', null);
@@ -281,8 +281,8 @@ function Sunburst(element, props) {
           for (let k = 0; k < children.length; k++) {
             currChild = children[k];
             if (currChild.name === nodeName &&
-                currChild.level === level) {
-            // must match name AND level
+              currChild.level === level) {
+              // must match name AND level
               childNode = currChild;
               foundChild = true;
               break;
@@ -332,17 +332,19 @@ function Sunburst(element, props) {
 
   // Main function to draw and set up the visualization, once we have the data.
   function createVisualization(rows) {
+
     const root = buildHierarchy(rows);
 
     vis = svg.append('svg:g')
       .attr('class', 'sunburst-vis')
       .attr('transform', (
         'translate(' +
-          `${(margin.left + (visWidth / 2))},` +
-          `${(margin.top + breadcrumbHeight + (visHeight / 2))}` +
+        `${(margin.left + (visWidth / 2))},` +
+        `${(margin.top + breadcrumbHeight + (visHeight / 2))}` +
         ')'
       ))
       .on('mouseleave', mouseleave);
+
 
     arcs = vis.append('svg:g')
       .attr('id', 'arcs');
@@ -371,17 +373,27 @@ function Sunburst(element, props) {
     }
 
     arcs.selectAll('path')
-        .data(nodes)
+      .data(nodes)
       .enter()
-        .append('svg:path')
-        .attr('display', d => d.depth ? null : 'none')
-        .attr('d', arc)
-        .attr('fill-rule', 'evenodd')
-        .style('fill', d => colorByCategory
-          ? colorFn(d.name)
-          : colorScale(d.m2 / d.m1))
-        .style('opacity', 1)
-        .on('mouseenter', mouseenter);
+      .append('svg:path')
+      .attr('display', d => d.depth ? null : 'none')
+      .attr('d', arc)
+      .attr('fill-rule', 'evenodd')
+      .style('fill', d => colorByCategory
+        ? colorFn(d.name)
+        : colorScale(d.m2 / d.m1))
+      .style('opacity', 1)
+      .on('mouseenter', mouseenter);
+      // .on('click', function (e) {
+      //   console.log('data', data)
+      //   console.log(e);
+      //   const graphData = [];
+      //   for (let child of e.children) {
+      //     graphData.push([child.name, child.m1, child.m2])
+      //   }
+      //   console.log('graphData', graphData);
+      //   createVisualization(graphData);
+      // });
 
     // Get total size of the tree = value of root node from partition.
     totalSize = root.value;

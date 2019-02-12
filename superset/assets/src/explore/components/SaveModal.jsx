@@ -39,6 +39,7 @@ class SaveModal extends React.Component {
     this.props.actions.fetchDashboards(this.props.userId);
   }
   onChange(name, event) {
+    console.log('name', name);
     switch (name) {
       case 'newSliceName':
         this.setState({ newSliceName: event.target.value });

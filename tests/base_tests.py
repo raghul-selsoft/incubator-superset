@@ -109,7 +109,7 @@ class SupersetTestCase(unittest.TestCase):
         """Shortcut to get the parsed results while following redirects"""
         if data:
             resp = self.client.post(
-                url, data=data, follow_redirects=follow_redirects)
+                url, data=data, follow_redirects=follow_redirects)       
         else:
             resp = self.client.get(url, follow_redirects=follow_redirects)
         if raise_on_error and resp.status_code > 400:

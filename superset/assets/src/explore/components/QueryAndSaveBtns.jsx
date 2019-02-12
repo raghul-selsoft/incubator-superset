@@ -4,6 +4,9 @@ import { ButtonGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import classnames from 'classnames';
 
 import Button from '../../components/Button';
+import ModalTrigger from 'src/components/ModalTrigger';
+import { t } from '@superset-ui/translation';
+
 
 const propTypes = {
   canAdd: PropTypes.string.isRequired,
@@ -16,13 +19,14 @@ const propTypes = {
 };
 
 const defaultProps = {
-  onStop: () => {},
-  onSave: () => {},
+  onStop: () => { },
+  onSave: () => { },
   disabled: false,
 };
 
 export default function QueryAndSaveBtns(
   { canAdd, onQuery, onSave, onStop, loading, chartIsStale, errorMessage }) {
+ 
   const saveClasses = classnames({
     'disabled disabledButton': canAdd !== 'True',
   });
@@ -43,16 +47,15 @@ export default function QueryAndSaveBtns(
       <i className="fa fa-stop-circle-o" /> Stop
     </Button>
   ) : (
-    <Button
-      className="query"
-      onClick={onQuery}
-      bsStyle={qryButtonStyle}
-      disabled={!!errorMessage}
-    >
-      <i className="fa fa-bolt" /> Run Query
+      <Button
+        className="query"
+        onClick={onQuery}
+        bsStyle={qryButtonStyle}
+        disabled={!!errorMessage}
+      >
+        <i className="fa fa-bolt" /> Run Query
     </Button>
-  );
-
+    );
   return (
     <div>
       <ButtonGroup className="query-and-save">
@@ -66,6 +69,7 @@ export default function QueryAndSaveBtns(
         >
           <i className="fa fa-plus-circle" /> Save
         </Button>
+
       </ButtonGroup>
       {errorMessage &&
         <span>
@@ -84,6 +88,8 @@ export default function QueryAndSaveBtns(
     </div>
   );
 }
+
+
 
 QueryAndSaveBtns.propTypes = propTypes;
 QueryAndSaveBtns.defaultProps = defaultProps;

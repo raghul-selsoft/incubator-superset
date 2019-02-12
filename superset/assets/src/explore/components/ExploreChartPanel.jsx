@@ -34,7 +34,7 @@ class ExploreChartPanel extends React.PureComponent {
   renderChart() {
     const { chart } = this.props;
     const headerHeight = this.props.standalone ? 0 : 80;
-
+    // console.log('===', this.props);
     return (
       <ParentSize>
         {({ width, height }) => (width > 0 && height > 0) && (
@@ -60,6 +60,7 @@ class ExploreChartPanel extends React.PureComponent {
           />
         )}
       </ParentSize>
+
     );
   }
 
@@ -96,10 +97,13 @@ class ExploreChartPanel extends React.PureComponent {
         >
           {this.renderChart()}
         </Panel>
+
       </div>
     );
   }
 }
+
+
 
 ExploreChartPanel.propTypes = propTypes;
 
