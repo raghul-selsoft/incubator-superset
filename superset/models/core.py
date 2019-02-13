@@ -48,6 +48,7 @@ metadata = Model.metadata  # pylint: disable=no-member
 
 PASSWORD_MASK = 'X' * 10
 
+
 def set_related_perm(mapper, connection, target):  # noqa
     src_class = target.cls_model
     id_ = target.datasource_id
@@ -77,6 +78,7 @@ def copy_dashboard(mapper, connection, target):
         slices=template.slices,
         owners=[new_user],
     )
+    print('dashboard=====', dashboard)
     session.add(dashboard)
     session.commit()
 
@@ -362,6 +364,149 @@ dashboard_user = Table(
     Column('dashboard_id', Integer, ForeignKey('dashboards.id')),
 )
 
+worker_queue_slices = Table(
+    'worker_queue_slices', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('worker_queue_id', Integer, ForeignKey('worker_queue.id')),
+    Column('slice_id', Integer, ForeignKey('slices.id')),
+)
+
+worker_queue_user = Table(
+    'worker_queue_user', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey('ab_user.id')),
+    Column('worker_queue_id', Integer, ForeignKey('worker_queue.id')),
+)
+
+
+class WorkerQueue(Model, AuditMixinNullable, ImportMixin):
+
+    """The woker queue object!"""
+
+    __tablename__ = 'worker_queue'
+    id = Column(Integer, primary_key=True)
+    worker_queue_title = Column(String(500))
+    position_json = Column(utils.MediumText())
+    description = Column(Text)
+    css = Column(Text)
+    json_metadata = Column(Text)
+    slug = Column(String(255), unique=True)
+    slices = relationship(
+        'Slice', secondary=worker_queue_slices, backref='worker_queue')
+    owners = relationship(security_manager.user_model, secondary=worker_queue_user)
+    export_fields = ('worker_queue_title', 'position_json', 'json_metadata',
+                     'description', 'css', 'slug')
+
+    def __repr__(self):
+        return self.worker_queue_title
+
+    @property
+    def table_names(self):
+        # pylint: disable=no-member
+        return ', '.join(
+            {'{}'.format(s.datasource.full_name) for s in self.slices})
+
+    @property
+    def url(self):
+        if self.json_metadata:
+            # add default_filters to the preselect_filters of dashboard
+            json_metadata = json.loads(self.json_metadata)
+            default_filters = json_metadata.get('default_filters')
+            # make sure default_filters is not empty and is valid
+            if default_filters and default_filters != '{}':
+                try:
+                    if json.loads(default_filters):
+                        filters = parse.quote(default_filters.encode('utf8'))
+                        return '/superset/worker_queue/{}/?preselect_filters={}'.format(
+                            self.slug or self.id, filters)
+                except Exception:
+                    pass
+        return '/superset/worker_queue/{}/'.format(self.slug or self.id)
+
+    @property
+    def datasources(self):
+        return {slc.datasource for slc in self.slices}
+
+    @property
+    def sqla_metadata(self):
+        # pylint: disable=no-member
+        metadata = MetaData(bind=self.get_sqla_engine())
+        return metadata.reflect()
+
+    def worker_queue_link(self):
+        title = escape(self.worker_queue_title)
+        return Markup(f'<a href="{self.url}">{title}</a>')
+
+    @property
+    def data(self):
+        positions = self.position_json
+        if positions:
+            positions = json.loads(positions)
+        return {
+            'id': self.id,
+            'metadata': self.params_dict,
+            'css': self.css,
+            'worker_queue_title': self.worker_queue_title,
+            'slug': self.slug,
+            'slices': [slc.data for slc in self.slices],
+            'position_json': positions,
+        }
+
+    @property
+    def params(self):
+        return self.json_metadata
+
+    @params.setter
+    def params(self, value):
+        self.json_metadata = value
+
+    @property
+    def position(self):
+        if self.position_json:
+            return json.loads(self.position_json)
+        return {}
+
+    @classmethod
+    def export_worker_queue(cls, worker_queue_ids):
+        copied_worker_queue = []
+        worker_queue_ids = set()
+        for worker_queue_id in worker_queue_ids:
+            # make sure that dashboard_id is an integer
+            worker_queue_id = int(worker_queue_id)
+            copied_worker_queue = (
+                db.session.query(WorkerQueue)
+                .options(subqueryload(WorkerQueue.slices))
+                .filter_by(id=worker_queue_id).first()
+            )
+            make_transient(copied_worker_queue)
+            for slc in copied_worker_queue.slices:
+                datasource_ids.add((slc.datasource_id, slc.datasource_type))
+                # add extra params for the import
+                slc.alter_params(
+                    remote_id=slc.id,
+                    datasource_name=slc.datasource.name,
+                    schema=slc.datasource.name,
+                    database_name=slc.datasource.database.name,
+                )
+            copied_worker_queue.alter_params(remote_id=worker_queue_id)
+            copied_worker_queue.append(copied_worker_queue)
+
+            eager_datasources = []
+            for worker_queue_id, worker_queue_type in datasource_ids:
+                eager_datasource = ConnectorRegistry.get_eager_datasource(
+                    db.session, worker_queue_type, worker_queue_id)
+                eager_datasource.alter_params(
+                    remote_id=eager_datasource.id,
+                    database_name=eager_datasource.database.name,
+                )
+                make_transient(eager_datasource)
+                eager_datasources.append(eager_datasource)
+
+        return json.dumps({
+            'workerqueue': copied_worker_queue,
+            'datasources': eager_datasources,
+        }, cls=utils.DashboardEncoder, indent=4)
+
 
 class Dashboard(Model, AuditMixinNullable, ImportMixin):
 
@@ -393,6 +538,8 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
 
     @property
     def url(self):
+        # print('json',self.slug)
+        # print('json',self.dashboard_title)
         if self.json_metadata:
             # add default_filters to the preselect_filters of dashboard
             json_metadata = json.loads(self.json_metadata)
@@ -410,6 +557,8 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
 
     @property
     def datasources(self):
+        # for slc in self.slices:
+        #     print('slc',slc)
         return {slc.datasource for slc in self.slices}
 
     @property
@@ -419,6 +568,7 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
         return metadata.reflect()
 
     def dashboard_link(self):
+        # print('url',self.url)
         title = escape(self.dashboard_title)
         return Markup(f'<a href="{self.url}">{title}</a>')
 
@@ -491,10 +641,12 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
             }
             """
             position_data = json.loads(dashboard.position_json)
+            # print('position_data',position_data)
             position_json = position_data.values()
+            # print('position_json',position_json)
             for value in position_json:
-                if (isinstance(value, dict) and value.get('meta') and
-                        value.get('meta').get('chartId')):
+                if (isinstance(value, dict) and value.get('meta')
+                        and value.get('meta').get('chartId')):
                     old_slice_id = value.get('meta').get('chartId')
 
                     if old_slice_id in old_to_new_slc_id_dict:
@@ -530,24 +682,24 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
             # update json metadata that deals with slice ids
             new_slc_id_str = '{}'.format(new_slc_id)
             old_slc_id_str = '{}'.format(slc.id)
-            if ('filter_immune_slices' in i_params_dict and
-                    old_slc_id_str in i_params_dict['filter_immune_slices']):
+            if ('filter_immune_slices' in i_params_dict
+                    and old_slc_id_str in i_params_dict['filter_immune_slices']):
                 new_filter_immune_slices.append(new_slc_id_str)
-            if ('timed_refresh_immune_slices' in i_params_dict and
-                    old_slc_id_str in
+            if ('timed_refresh_immune_slices' in i_params_dict
+                    and old_slc_id_str in
                     i_params_dict['timed_refresh_immune_slices']):
                 new_timed_refresh_immune_slices.append(new_slc_id_str)
-            if ('expanded_slices' in i_params_dict and
-                    old_slc_id_str in i_params_dict['expanded_slices']):
+            if ('expanded_slices' in i_params_dict
+                    and old_slc_id_str in i_params_dict['expanded_slices']):
                 new_expanded_slices[new_slc_id_str] = (
                     i_params_dict['expanded_slices'][old_slc_id_str])
 
         # override the dashboard
         existing_dashboard = None
         for dash in session.query(Dashboard).all():
-            if ('remote_id' in dash.params_dict and
-                    dash.params_dict['remote_id'] ==
-                    dashboard_to_import.id):
+            if ('remote_id' in dash.params_dict
+                    and dash.params_dict['remote_id']
+                    == dashboard_to_import.id):
                 existing_dashboard = dash
 
         dashboard_to_import.id = None
@@ -749,8 +901,8 @@ class Database(Model, AuditMixinNullable, ImportMixin):
             if user_name:
                 effective_username = user_name
             elif (
-                hasattr(g, 'user') and hasattr(g.user, 'username') and
-                g.user.username is not None
+                hasattr(g, 'user') and hasattr(g.user, 'username')
+                and g.user.username is not None
             ):
                 effective_username = g.user.username
         return effective_username

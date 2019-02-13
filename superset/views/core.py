@@ -264,8 +264,8 @@ class DatabaseView(SupersetModelView, DeleteMixin, YamlExportMixin):  # noqa
         if obj.tables:
             raise SupersetException(Markup(
                 'Cannot delete a database that has tables attached. '
-                "Here's the list of associated tables: " +
-                ', '.join('{}'.format(o) for o in obj.tables)))
+                "Here's the list of associated tables: "
+                + ', '.join('{}'.format(o) for o in obj.tables)))
 
     def _delete(self, pk):
         DeleteMixin._delete(self, pk)
@@ -386,8 +386,8 @@ class CsvToDatabaseView(SimpleFormView):
         schemas = database.get_schema_access_for_csv_upload()
         if schemas:
             return schema in schemas
-        return (security_manager.database_access(database) or
-                security_manager.all_datasource_access())
+        return (security_manager.database_access(database)
+                or security_manager.all_datasource_access())
 
 
 appbuilder.add_view_no_menu(CsvToDatabaseView)
@@ -542,6 +542,83 @@ class SliceAddView(SliceModelView):  # noqa
 appbuilder.add_view_no_menu(SliceAddView)
 
 
+class WokerQueueModelView(SupersetModelView, DeleteMixin):
+    route_base = '/worker_queue'
+    datamodel = SQLAInterface(models.WorkerQueue)
+
+    list_title = _('List WorkerQueue')
+    show_title = _('Show WorkerQueue')
+    add_title = _('Add WorkerQueue')
+    edit_title = _('Edit WorkerQueue')
+
+    list_columns = ['worker_queue_link', 'creator', 'modified']
+    order_columns = ['modified']
+    edit_columns = [
+        'worker_queue_title', 'slug', 'owners', 'position_json', 'css',
+        'json_metadata']
+    show_columns = edit_columns + ['table_names', 'slices']
+    search_columns = ('worker_queue_title', 'slug', 'owners')
+    add_columns = edit_columns
+    # base_order = ('changed_on', 'desc')
+
+    label_columns = {
+        'worker_queue_link': _('Worker Queue'),
+        'worker_queue_title': _('Title'),
+        'slug': _('Slug'),
+        'slices': _('Charts'),
+        'owners': _('Owners'),
+        'creator': _('Creator'),
+        'modified': _('Modified'),
+        'position_json': _('Position JSON'),
+        'css': _('CSS'),
+        'json_metadata': _('JSON Metadata'),
+        'table_names': _('Underlying Tables'),
+    }
+
+    def pre_add(self, obj):
+        obj.slug = obj.slug.strip() or None
+        if obj.slug:
+            obj.slug = obj.slug.replace(' ', '-')
+            obj.slug = re.sub(r'[^\w\-]+', '', obj.slug)
+        if g.user not in obj.owners:
+            obj.owners.append(g.user)
+        utils.validate_json(obj.json_metadata)
+        utils.validate_json(obj.position_json)
+        owners = [o for o in obj.owners]
+        for slc in obj.slices:
+            slc.owners = list(set(owners) | set(slc.owners))
+
+    def pre_update(self, obj):
+        check_ownership(obj)
+        self.pre_add(obj)
+
+    def pre_delete(self, obj):
+        check_ownership(obj)
+
+    @action('mulexport', __('Export'), __('Export WorkerQueue?'), 'fa-database')
+    def mulexport(self, items):
+        if not isinstance(items, list):
+            items = [items]
+        ids = ''.join('&id={}'.format(d.id) for d in items)
+        return redirect(
+            '/worker_queue/export_worker_queue_form?{}'.format(ids[1:]))
+
+    @log_this
+    @has_access
+    @expose('/export_worker_queue_form')
+    def download_worker_queue(self):
+        if request.args.get('action') == 'go':
+            ids = request.args.getlist('id')
+            return Response(
+                models.WorkerQueue.export_worker_queue(ids),
+                headers=generate_download_headers('json'),
+                mimetype='application/text')
+        return self.render_template(
+            'superset/export_worker_queue.html',
+            worker_queue_url='/worker_queue/list',
+        )
+
+
 class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     route_base = '/dashboard'
     datamodel = SQLAInterface(models.Dashboard)
@@ -645,6 +722,15 @@ appbuilder.add_view(
     category='',
     category_icon='')
 
+# db.create_all()
+appbuilder.add_view(
+    WokerQueueModelView,
+    'Worker Queue',
+    label=__('Worker Queue'),
+    icon='fa-dashboard',
+    category='',
+    category_icon='')
+
 
 class DashboardModelViewAsync(DashboardModelView):  # noqa
     route_base = '/dashboardasync'
@@ -661,6 +747,22 @@ class DashboardModelViewAsync(DashboardModelView):  # noqa
 
 
 appbuilder.add_view_no_menu(DashboardModelViewAsync)
+
+# class WokerQueueModelViewAsync(WokerQueueModelView):  # noqa
+#     route_base = '/worker_queueasync'
+#     list_columns = [
+#         'id', 'worker_queue_link', 'creator', 'modified', 'worker_queue_title',
+#         'changed_on', 'url', 'changed_by_name',
+#     ]
+#     label_columns = {
+#         'worker_queue_link': _('Woker Queue'),
+#         'worker_queue_title': _('Title'),
+#         'creator': _('Creator'),
+#         'modified': _('Modified'),
+#     }
+
+
+# appbuilder.add_view_no_menu(WokerQueueModelViewAsync)
 
 
 class DashboardAddView(DashboardModelView):  # noqa
@@ -941,8 +1043,8 @@ class Superset(BaseSupersetView):
 
         # check if you can approve
         if (
-                security_manager.all_datasource_access() or
-                check_ownership(datasource, raise_if_false=False)
+                security_manager.all_datasource_access()
+                or check_ownership(datasource, raise_if_false=False)
         ):
             # can by done by admin only
             if role_to_grant:
@@ -1426,8 +1528,8 @@ class Superset(BaseSupersetView):
             dash_overwrite_perm = check_ownership(dash, raise_if_false=False)
             if not dash_overwrite_perm:
                 return json_error_response(
-                    _('You don\'t have the rights to ') + _('alter this ') +
-                    _('dashboard'),
+                    _('You don\'t have the rights to ') + _('alter this ')
+                    + _('dashboard'),
                     status=400)
 
             flash(
@@ -1581,6 +1683,7 @@ class Superset(BaseSupersetView):
     @expose('/copy_dash/<dashboard_id>/', methods=['GET', 'POST'])
     def copy_dash(self, dashboard_id):
         """Copy dashboard"""
+        print('================Dashboard link===================') 
         session = db.session()
         data = json.loads(request.form.get('data'))
         dash = models.Dashboard()
@@ -1609,8 +1712,8 @@ class Superset(BaseSupersetView):
             # while in older version slice_id is string type
             for value in data['positions'].values():
                 if (
-                    isinstance(value, dict) and value.get('meta') and
-                    value.get('meta').get('chartId')
+                    isinstance(value, dict) and value.get('meta')
+                    and value.get('meta').get('chartId')
                 ):
                     old_id = '{}'.format(value.get('meta').get('chartId'))
                     new_id = int(old_to_new_sliceids[old_id])
@@ -1631,6 +1734,7 @@ class Superset(BaseSupersetView):
     @expose('/save_dash/<dashboard_id>/', methods=['GET', 'POST'])
     def save_dash(self, dashboard_id):
         """Save a dashboard's metadata"""
+        print('================Dashboard link===================')
         session = db.session()
         dash = (session
                 .query(models.Dashboard)
@@ -1651,8 +1755,8 @@ class Superset(BaseSupersetView):
         slice_id_to_name = {}
         for value in positions.values():
             if (
-                isinstance(value, dict) and value.get('meta') and
-                value.get('meta').get('chartId')
+                isinstance(value, dict) and value.get('meta')
+                and value.get('meta').get('chartId')
             ):
                 slice_id = value.get('meta').get('chartId')
                 slice_ids.append(slice_id)
@@ -1699,6 +1803,7 @@ class Superset(BaseSupersetView):
     @expose('/add_slices/<dashboard_id>/', methods=['POST'])
     def add_slices(self, dashboard_id):
         """Add and save slices to a dashboard"""
+        print('================Dashboard link===================')
         data = json.loads(request.form.get('data'))
         session = db.session()
         Slice = models.Slice  # noqa
@@ -2047,8 +2152,8 @@ class Superset(BaseSupersetView):
                 session.query(SqlaTable)
                 .join(models.Database)
                 .filter(
-                    models.Database.database_name == db_name or
-                    SqlaTable.table_name == table_name)
+                    models.Database.database_name == db_name
+                    or SqlaTable.table_name == table_name)
             ).first()
             if not table:
                 return json_error_response(__(
@@ -2104,9 +2209,88 @@ class Superset(BaseSupersetView):
         return json_success(json.dumps({'count': count}))
 
     @has_access
+    @expose('/worker_queue/<worker_queue_id>/')
+    def worker_queue(self, worker_queue_id):
+        """Server side rendering for a dashboard"""
+        print('================worker_queue link===================')
+        session = db.session()
+        qry = session.query(models.WorkerQueue)
+        if worker_queue_id.isdigit():
+            qry = qry.filter_by(id=int(worker_queue_id))
+        else:
+            qry = qry.filter_by(slug=worker_queue_id)
+
+        work = qry.one_or_none()
+        if not work:
+            abort(404)
+        datasources = set()
+        for slc in work.slices:
+            datasource = slc.datasource
+            if datasource:
+                datasources.add(datasource)
+
+        if config.get('ENABLE_ACCESS_REQUEST'):
+            for datasource in datasources:
+                if datasource and not security_manager.datasource_access(datasource):
+                    flash(
+                        __(security_manager.get_datasource_access_error_msg(datasource)),
+                        'danger')
+                    return redirect(
+                        'superset/request_access/?'
+                        f'worker_queue_id={work.id}&')
+
+        dash_edit_perm = check_ownership(work, raise_if_false=False) and \
+            security_manager.can_access('can_save_dash', 'Superset')
+        dash_save_perm = security_manager.can_access('can_save_dash', 'Superset')
+        superset_can_explore = security_manager.can_access('can_explore', 'Superset')
+        slice_can_edit = security_manager.can_access('can_edit', 'SliceModelView')
+
+        standalone_mode = request.args.get('standalone') == 'true'
+        edit_mode = request.args.get('edit') == 'true'
+
+        # Hack to log the dashboard_id properly, even when getting a slug
+        @log_this
+        def worker_queue(**kwargs):  # noqa
+            pass
+        worker_queue(
+            worker_queue_id=work.id,
+            dashboard_version='v2',
+            dash_edit_perm=dash_edit_perm,
+            edit_mode=edit_mode)
+
+        worker_queue_data = work.data
+        worker_queue_data.update({
+            'standalone_mode': standalone_mode,
+            'dash_save_perm': dash_save_perm,
+            'dash_edit_perm': dash_edit_perm,
+            'superset_can_explore': superset_can_explore,
+            'slice_can_edit': slice_can_edit,
+        })
+
+        bootstrap_data = {
+            'user_id': g.user.get_id(),
+            'worker_queue_data': worker_queue_data,
+            'datasources': {ds.uid: ds.data for ds in datasources},
+            'common': self.common_bootsrap_payload(),
+            'editMode': edit_mode,
+        }
+
+        if request.args.get('json') == 'true':
+            return json_success(json.dumps(bootstrap_data))
+
+        return self.render_template(
+            'superset/worker_queue.html',
+            entry='worker_queue',
+            standalone_mode=standalone_mode,
+            title=work.worker_queue_title,
+            bootstrap_data=json.dumps(bootstrap_data),
+        )
+
+    @has_access
     @expose('/dashboard/<dashboard_id>/')
     def dashboard(self, dashboard_id):
         """Server side rendering for a dashboard"""
+        print('================Dashboard link===================')
         session = db.session()
         qry = session.query(models.Dashboard)
         if dashboard_id.isdigit():
@@ -2680,8 +2864,8 @@ class Superset(BaseSupersetView):
             client_id for client_id, query_dict in dict_queries.items()
             if (
                 query_dict['state'] in unfinished_states and (
-                    now - query_dict['startDttm'] >
-                    config.get('SQLLAB_ASYNC_TIME_LIMIT_SEC') * 1000
+                    now - query_dict['startDttm']
+                    > config.get('SQLLAB_ASYNC_TIME_LIMIT_SEC') * 1000
                 )
             )
         ]
@@ -2853,8 +3037,8 @@ class Superset(BaseSupersetView):
         )
         try:
             schemas_allowed = database.get_schema_access_for_csv_upload()
-            if (security_manager.database_access(database) or
-                    security_manager.all_datasource_access()):
+            if (security_manager.database_access(database)
+                    or security_manager.all_datasource_access()):
                 return self.json_response(schemas_allowed)
             # the list schemas_allowed should not be empty here
             # and the list schemas_allowed_processed returned from security_manager

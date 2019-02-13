@@ -253,7 +253,7 @@ class AuditMixinNullable(AuditMixin):
         if not user:
             return ''
         url = '/superset/profile/{}/'.format(user.username)
-        return Markup('<a href="{}">{}</a>'.format(url, escape(user) or ''))
+        return Markup('<a href="{}">{}</a>'.format(url, escape(user) or 'ra'))
 
     def changed_by_name(self):
         if self.created_by:
