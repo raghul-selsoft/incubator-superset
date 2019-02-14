@@ -20,10 +20,11 @@ import {
   ROW_TYPE,
 } from '../util/componentTypes';
 
-export default function(bootstrapData) {
+export default function (bootstrapData) {
   const { user_id, datasources, common, editMode } = bootstrapData;
 
   const dashboard = { ...bootstrapData.dashboard_data };
+  // console.log('dashboard', dashboard);
   let filters = {};
   try {
     // allow request parameter overwrite dashboard metadata
@@ -123,13 +124,23 @@ export default function(bootstrapData) {
   });
 
   // store the header as a layout component so we can undo/redo changes
-  layout[DASHBOARD_HEADER_ID] = {
-    id: DASHBOARD_HEADER_ID,
-    type: DASHBOARD_HEADER_TYPE,
-    meta: {
-      text: dashboard.dashboard_title,
-    },
-  };
+  if (dashboard.dashboard_title) {
+    layout[DASHBOARD_HEADER_ID] = {
+      id: DASHBOARD_HEADER_ID,
+      type: DASHBOARD_HEADER_TYPE,
+      meta: {
+        text: dashboard.dashboard_title,
+      },
+    };
+  } else {
+    layout[DASHBOARD_HEADER_ID] = {
+      id: DASHBOARD_HEADER_ID,
+      type: DASHBOARD_HEADER_TYPE,
+      meta: {
+        text: dashboard.worker_queue_title,
+      },
+    };
+  }
 
   const dashboardLayout = {
     past: [],

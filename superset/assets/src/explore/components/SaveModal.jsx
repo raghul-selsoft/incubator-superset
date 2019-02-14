@@ -45,7 +45,7 @@ class SaveModal extends React.Component {
   }
   onChange(name, event) {
     // console.log('name', name);
-    console.log('event', event);
+    // console.log('event', event);
     switch (name) {
       case 'newSliceName':
         this.setState({ newSliceName: event.target.value });

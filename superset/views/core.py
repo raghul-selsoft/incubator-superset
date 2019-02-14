@@ -1450,7 +1450,7 @@ class Superset(BaseSupersetView):
             'forced_height': request.args.get('height'),
             'common': self.common_bootsrap_payload(),
         }
-     
+
         table_name = datasource.table_name \
             if datasource_type == 'table' \
             else datasource.datasource_name
@@ -1495,7 +1495,6 @@ class Superset(BaseSupersetView):
     def save_or_overwrite_slice(
             self, args, slc, slice_add_perm, slice_overwrite_perm, slice_download_perm,
             datasource_id, datasource_type, datasource_name):
-
         """Save or overwrite a slice"""
         slice_name = args.get('slice_name')
         action = args.get('action')
@@ -1554,7 +1553,7 @@ class Superset(BaseSupersetView):
                     _('You don\'t have the rights to ') + _('alter this ') +
                     _('worker queue'),
                     status=400)
-          
+
             flash(
                 'Slice [{}] was added to worker queue [{}]'.format(
                     slc.slice_name,
@@ -1583,7 +1582,8 @@ class Superset(BaseSupersetView):
             dash_add_perm = security_manager.can_access('can_add', 'WokerQueueModelView')
             if not dash_add_perm:
                 return json_error_response(
-                    _('You don\'t have the rights to ') + _('create a ') + _('worker queue'),
+                    _('You don\'t have the rights to ') +
+                    _('create a ') + _('worker queue'),
                     status=400)
 
             dash = models.WorkerQueue(
@@ -1594,7 +1594,7 @@ class Superset(BaseSupersetView):
                 'to it'.format(
                     dash.worker_queue_title,
                     slc.slice_name),
-                'info')     
+                'info')
 
         if dash and slc not in dash.slices:
             dash.slices.append(slc)
@@ -1610,7 +1610,7 @@ class Superset(BaseSupersetView):
 
         if request.args.get('goto_dash') == 'true':
             response.update({'dashboard': dash.url})
-       
+
         return json_success(json.dumps(response))
 
     def save_slice(self, slc):
@@ -2224,6 +2224,7 @@ class Superset(BaseSupersetView):
     @expose('/favstar/<class_name>/<obj_id>/<action>/')
     def favstar(self, class_name, obj_id, action):
         """Toggle favorite stars on Slices and Dashboard"""
+        print('================favstar link===================',class_name)
         session = db.session()
         FavStar = models.FavStar  # noqa
         count = 0
@@ -2250,88 +2251,10 @@ class Superset(BaseSupersetView):
         return json_success(json.dumps({'count': count}))
 
     @has_access
-    @expose('/worker_queue/<worker_queue_id>/')
-    def worker_queue(self, worker_queue_id):
-        """Server side rendering for a dashboard"""
-        print('================worker_queue link===================')
-        session = db.session()
-        qry = session.query(models.WorkerQueue)
-        if worker_queue_id.isdigit():
-            qry = qry.filter_by(id=int(worker_queue_id))
-        else:
-            qry = qry.filter_by(slug=worker_queue_id)
-
-        work = qry.one_or_none()
-        if not work:
-            abort(404)
-        datasources = set()
-        for slc in work.slices:
-            datasource = slc.datasource
-            if datasource:
-                datasources.add(datasource)
-
-        if config.get('ENABLE_ACCESS_REQUEST'):
-            for datasource in datasources:
-                if datasource and not security_manager.datasource_access(datasource):
-                    flash(
-                        __(security_manager.get_datasource_access_error_msg(datasource)),
-                        'danger')
-                    return redirect(
-                        'superset/request_access/?'
-                        f'worker_queue_id={work.id}&')
-
-        dash_edit_perm = check_ownership(work, raise_if_false=False) and \
-            security_manager.can_access('can_save_dash', 'Superset')
-        dash_save_perm = security_manager.can_access('can_save_dash', 'Superset')
-        superset_can_explore = security_manager.can_access('can_explore', 'Superset')
-        slice_can_edit = security_manager.can_access('can_edit', 'SliceModelView')
-
-        standalone_mode = request.args.get('standalone') == 'true'
-        edit_mode = request.args.get('edit') == 'true'
-
-        # Hack to log the dashboard_id properly, even when getting a slug
-        @log_this
-        def worker_queue(**kwargs):  # noqa
-            pass
-        worker_queue(
-            worker_queue_id=work.id,
-            dashboard_version='v2',
-            dash_edit_perm=dash_edit_perm,
-            edit_mode=edit_mode)
-
-        worker_queue_data = work.data
-        worker_queue_data.update({
-            'standalone_mode': standalone_mode,
-            'dash_save_perm': dash_save_perm,
-            'dash_edit_perm': dash_edit_perm,
-            'superset_can_explore': superset_can_explore,
-            'slice_can_edit': slice_can_edit,
-        })
-
-        bootstrap_data = {
-            'user_id': g.user.get_id(),
-            'worker_queue_data': worker_queue_data,
-            'datasources': {ds.uid: ds.data for ds in datasources},
-            'common': self.common_bootsrap_payload(),
-            'editMode': edit_mode,
-        }
-
-        if request.args.get('json') == 'true':
-            return json_success(json.dumps(bootstrap_data))
-
-        return self.render_template(
-            'superset/worker_queue.html',
-            entry='worker_queue',
-            standalone_mode=standalone_mode,
-            title=work.worker_queue_title,
-            bootstrap_data=json.dumps(bootstrap_data),
-        )
-
-    @has_access
     @expose('/dashboard/<dashboard_id>/')
     def dashboard(self, dashboard_id):
         """Server side rendering for a dashboard"""
-        print('================Dashboard link===================')
+        print('================Dashboard id link===================')
         session = db.session()
         qry = session.query(models.Dashboard)
         if dashboard_id.isdigit():
@@ -2340,6 +2263,7 @@ class Superset(BaseSupersetView):
             qry = qry.filter_by(slug=dashboard_id)
 
         dash = qry.one_or_none()
+        print("====dash====",dash.data)
         if not dash:
             abort(404)
         datasources = set()
@@ -2402,6 +2326,84 @@ class Superset(BaseSupersetView):
             entry='dashboard',
             standalone_mode=standalone_mode,
             title=dash.dashboard_title,
+            bootstrap_data=json.dumps(bootstrap_data),
+        )
+
+    @has_access
+    @expose('/worker_queue/<worker_queue_id>/')
+    def worker_queue(self, worker_queue_id):
+        """Server side rendering for a dashboard"""
+        print('================worker_queue link===================')
+        session = db.session()
+        qry = session.query(models.WorkerQueue)
+        if worker_queue_id.isdigit():
+            qry = qry.filter_by(id=int(worker_queue_id))
+        else:
+            qry = qry.filter_by(slug=worker_queue_id)
+
+        work = qry.one_or_none()
+        if not work:
+            abort(404)
+        datasources = set()
+        for slc in work.slices:
+            datasource = slc.datasource
+            if datasource:
+                datasources.add(datasource)
+
+        if config.get('ENABLE_ACCESS_REQUEST'):
+            for datasource in datasources:
+                if datasource and not security_manager.datasource_access(datasource):
+                    flash(
+                        __(security_manager.get_datasource_access_error_msg(datasource)),
+                        'danger')
+                    return redirect(
+                        'superset/request_access/?'
+                        f'worker_queue_id={work.id}&')
+
+        dash_edit_perm = check_ownership(work, raise_if_false=False) and \
+            security_manager.can_access('can_save_dash', 'Superset')
+        dash_save_perm = security_manager.can_access('can_save_dash', 'Superset')
+        superset_can_explore = security_manager.can_access('can_explore', 'Superset')
+        slice_can_edit = security_manager.can_access('can_edit', 'SliceModelView')
+
+        standalone_mode = request.args.get('standalone') == 'true'
+        edit_mode = request.args.get('edit') == 'true'
+
+        # Hack to log the dashboard_id properly, even when getting a slug
+        @log_this
+        def worker_queue(**kwargs):  # noqa
+            pass
+        worker_queue(
+            worker_queue_id=work.id,
+            dashboard_version='v2',
+            dash_edit_perm=dash_edit_perm,
+            edit_mode=edit_mode)
+            
+        worker_queue_data = work.data
+        worker_queue_data.update({
+            'standalone_mode': standalone_mode,
+            'dash_save_perm': dash_save_perm,
+            'dash_edit_perm': dash_edit_perm,
+            'superset_can_explore': superset_can_explore,
+            'slice_can_edit': slice_can_edit,
+        })
+
+        bootstrap_data = {
+            'user_id': g.user.get_id(),
+            'dashboard_data': worker_queue_data,
+            'datasources': {ds.uid: ds.data for ds in datasources},
+            'common': self.common_bootsrap_payload(),
+            'editMode': edit_mode,
+        }
+
+        if request.args.get('json') == 'true':
+            return json_success(json.dumps(bootstrap_data))
+
+        return self.render_template(
+            'superset/worker_queue.html',
+            entry='dashboard',
+            standalone_mode=standalone_mode,
+            title=work.worker_queue_title,
             bootstrap_data=json.dumps(bootstrap_data),
         )
 
