@@ -22,7 +22,7 @@ export function fetchWorkerQueueFailed(userId) {
 }
 
 export function fetchDashboards(userId) {
-  return function fetchWorkerQueueThunk(dispatch) {
+  return function fetchDashboardsThunk(dispatch) {
     return SupersetClient.get({
       endpoint: `/dashboardasync/api/read?_flt_0_owners=${userId}`,
     })
@@ -34,12 +34,12 @@ export function fetchDashboards(userId) {
 
         return dispatch(fetchDashboardsSucceeded(choices));
       })
-      .catch(() => dispatch(fetchWorkerQueueFailed(userId)));
+      .catch(() => dispatch(fetchDashboardsFailed(userId)));
   };
 }
 
 export function fetchWorkerQueue(userId) {
-  return function fetchDashboardsThunk(dispatch) {
+  return function fetchWorkerQueueThunk(dispatch) {
     return SupersetClient.get({
       endpoint: `/worker_queueasync/api/read?_flt_0_owners=${userId}`,
     })

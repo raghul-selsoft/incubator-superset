@@ -1546,7 +1546,7 @@ class Superset(BaseSupersetView):
                 .one()
             )
 
-            # check edit dashboard permissions
+            # check edit worker queue permissions
             dash_overwrite_perm = check_ownership(dash, raise_if_false=False)
             if not dash_overwrite_perm:
                 return json_error_response(
@@ -1578,7 +1578,7 @@ class Superset(BaseSupersetView):
                 'info')
 
         elif request.args.get('add_to_dash') == 'new_worker_queue':
-            # check create dashboard permissions
+            # check create worker queue permissions
             dash_add_perm = security_manager.can_access('can_add', 'WokerQueueModelView')
             if not dash_add_perm:
                 return json_error_response(
@@ -2378,7 +2378,7 @@ class Superset(BaseSupersetView):
             dashboard_version='v2',
             dash_edit_perm=dash_edit_perm,
             edit_mode=edit_mode)
-            
+
         worker_queue_data = work.data
         worker_queue_data.update({
             'standalone_mode': standalone_mode,
