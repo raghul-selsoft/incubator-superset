@@ -114,10 +114,9 @@ function TableVis(element, props) {
     .attr('width', '100%');
 
   columns.push({ key: 'Action', label: 'Action' });
-  console.log('table', columns);
-  console.log('props', props);
-  // columns.reverse();
-
+  // console.log('table', columns);
+  // console.log('props', props);
+ 
   table.append('thead').append('tr')
     .selectAll('th')
     .data(columns.map(c => c.label))

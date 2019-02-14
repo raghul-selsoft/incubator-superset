@@ -264,8 +264,8 @@ class DatabaseView(SupersetModelView, DeleteMixin, YamlExportMixin):  # noqa
         if obj.tables:
             raise SupersetException(Markup(
                 'Cannot delete a database that has tables attached. '
-                "Here's the list of associated tables: "
-                + ', '.join('{}'.format(o) for o in obj.tables)))
+                "Here's the list of associated tables: " +
+                ', '.join('{}'.format(o) for o in obj.tables)))
 
     def _delete(self, pk):
         DeleteMixin._delete(self, pk)
@@ -386,8 +386,8 @@ class CsvToDatabaseView(SimpleFormView):
         schemas = database.get_schema_access_for_csv_upload()
         if schemas:
             return schema in schemas
-        return (security_manager.database_access(database)
-                or security_manager.all_datasource_access())
+        return (security_manager.database_access(database) or
+                security_manager.all_datasource_access())
 
 
 appbuilder.add_view_no_menu(CsvToDatabaseView)
@@ -748,21 +748,22 @@ class DashboardModelViewAsync(DashboardModelView):  # noqa
 
 appbuilder.add_view_no_menu(DashboardModelViewAsync)
 
-# class WokerQueueModelViewAsync(WokerQueueModelView):  # noqa
-#     route_base = '/worker_queueasync'
-#     list_columns = [
-#         'id', 'worker_queue_link', 'creator', 'modified', 'worker_queue_title',
-#         'changed_on', 'url', 'changed_by_name',
-#     ]
-#     label_columns = {
-#         'worker_queue_link': _('Woker Queue'),
-#         'worker_queue_title': _('Title'),
-#         'creator': _('Creator'),
-#         'modified': _('Modified'),
-#     }
+
+class WokerQueueModelViewAsync(WokerQueueModelView):  # noqa
+    route_base = '/worker_queueasync'
+    list_columns = [
+        'id', 'worker_queue_link', 'creator', 'modified', 'worker_queue_title',
+        'changed_on', 'url', 'changed_by_name',
+    ]
+    label_columns = {
+        'worker_queue_link': _('Woker Queue'),
+        'worker_queue_title': _('Title'),
+        'creator': _('Creator'),
+        'modified': _('Modified'),
+    }
 
 
-# appbuilder.add_view_no_menu(WokerQueueModelViewAsync)
+appbuilder.add_view_no_menu(WokerQueueModelViewAsync)
 
 
 class DashboardAddView(DashboardModelView):  # noqa
@@ -1043,8 +1044,8 @@ class Superset(BaseSupersetView):
 
         # check if you can approve
         if (
-                security_manager.all_datasource_access()
-                or check_ownership(datasource, raise_if_false=False)
+                security_manager.all_datasource_access() or
+                check_ownership(datasource, raise_if_false=False)
         ):
             # can by done by admin only
             if role_to_grant:
@@ -1304,7 +1305,7 @@ class Superset(BaseSupersetView):
         force = request.args.get('force') == 'true'
 
         form_data = self.get_form_data()[0]
-        print('formDate>>>>>', form_data)
+        # print('formDate>>>>>', form_data)
         datasource_id, datasource_type = self.datasource_info(
             datasource_id, datasource_type, form_data)
 
@@ -1366,6 +1367,7 @@ class Superset(BaseSupersetView):
     @expose('/explore/<datasource_type>/<datasource_id>/', methods=['GET', 'POST'])
     @expose('/explore/', methods=['GET', 'POST'])
     def explore(self, datasource_type=None, datasource_id=None):
+        print("=====================savemodel=============")
         user_id = g.user.get_id() if g.user else None
         form_data, slc = self.get_form_data(use_slice_data=True)
 
@@ -1448,7 +1450,7 @@ class Superset(BaseSupersetView):
             'forced_height': request.args.get('height'),
             'common': self.common_bootsrap_payload(),
         }
-        print('bootstrapData ===>>>', bootstrap_data)
+     
         table_name = datasource.table_name \
             if datasource_type == 'table' \
             else datasource.datasource_name
@@ -1493,6 +1495,7 @@ class Superset(BaseSupersetView):
     def save_or_overwrite_slice(
             self, args, slc, slice_add_perm, slice_overwrite_perm, slice_download_perm,
             datasource_id, datasource_type, datasource_name):
+
         """Save or overwrite a slice"""
         slice_name = args.get('slice_name')
         action = args.get('action')
@@ -1528,14 +1531,34 @@ class Superset(BaseSupersetView):
             dash_overwrite_perm = check_ownership(dash, raise_if_false=False)
             if not dash_overwrite_perm:
                 return json_error_response(
-                    _('You don\'t have the rights to ') + _('alter this ')
-                    + _('dashboard'),
+                    _('You don\'t have the rights to ') + _('alter this ') +
+                    _('dashboard'),
                     status=400)
 
             flash(
                 'Slice [{}] was added to dashboard [{}]'.format(
                     slc.slice_name,
                     dash.dashboard_title),
+                'info')
+        elif request.args.get('add_to_dash') == 'existing_worker_queue':
+            dash = (
+                db.session.query(models.WorkerQueue)
+                .filter_by(id=int(request.args.get('save_to_worker_queue_id')))
+                .one()
+            )
+
+            # check edit dashboard permissions
+            dash_overwrite_perm = check_ownership(dash, raise_if_false=False)
+            if not dash_overwrite_perm:
+                return json_error_response(
+                    _('You don\'t have the rights to ') + _('alter this ') +
+                    _('worker queue'),
+                    status=400)
+          
+            flash(
+                'Slice [{}] was added to worker queue [{}]'.format(
+                    slc.slice_name,
+                    dash.worker_queue_title),
                 'info')
         elif request.args.get('add_to_dash') == 'new':
             # check create dashboard permissions
@@ -1555,6 +1578,24 @@ class Superset(BaseSupersetView):
                     slc.slice_name),
                 'info')
 
+        elif request.args.get('add_to_dash') == 'new_worker_queue':
+            # check create dashboard permissions
+            dash_add_perm = security_manager.can_access('can_add', 'WokerQueueModelView')
+            if not dash_add_perm:
+                return json_error_response(
+                    _('You don\'t have the rights to ') + _('create a ') + _('worker queue'),
+                    status=400)
+
+            dash = models.WorkerQueue(
+                worker_queue_title=request.args.get('new_worker_queue_name'),
+                owners=[g.user] if g.user else [])
+            flash(
+                'Worker Queue [{}] just got created and slice [{}] was added '
+                'to it'.format(
+                    dash.worker_queue_title,
+                    slc.slice_name),
+                'info')     
+
         if dash and slc not in dash.slices:
             dash.slices.append(slc)
             db.session.commit()
@@ -1569,7 +1610,7 @@ class Superset(BaseSupersetView):
 
         if request.args.get('goto_dash') == 'true':
             response.update({'dashboard': dash.url})
-
+       
         return json_success(json.dumps(response))
 
     def save_slice(self, slc):
@@ -1683,7 +1724,7 @@ class Superset(BaseSupersetView):
     @expose('/copy_dash/<dashboard_id>/', methods=['GET', 'POST'])
     def copy_dash(self, dashboard_id):
         """Copy dashboard"""
-        print('================Dashboard link===================') 
+        print('================Dashboard link===================')
         session = db.session()
         data = json.loads(request.form.get('data'))
         dash = models.Dashboard()
@@ -1712,8 +1753,8 @@ class Superset(BaseSupersetView):
             # while in older version slice_id is string type
             for value in data['positions'].values():
                 if (
-                    isinstance(value, dict) and value.get('meta')
-                    and value.get('meta').get('chartId')
+                    isinstance(value, dict) and value.get('meta') and
+                    value.get('meta').get('chartId')
                 ):
                     old_id = '{}'.format(value.get('meta').get('chartId'))
                     new_id = int(old_to_new_sliceids[old_id])
@@ -1755,8 +1796,8 @@ class Superset(BaseSupersetView):
         slice_id_to_name = {}
         for value in positions.values():
             if (
-                isinstance(value, dict) and value.get('meta')
-                and value.get('meta').get('chartId')
+                isinstance(value, dict) and value.get('meta') and
+                value.get('meta').get('chartId')
             ):
                 slice_id = value.get('meta').get('chartId')
                 slice_ids.append(slice_id)
@@ -2152,8 +2193,8 @@ class Superset(BaseSupersetView):
                 session.query(SqlaTable)
                 .join(models.Database)
                 .filter(
-                    models.Database.database_name == db_name
-                    or SqlaTable.table_name == table_name)
+                    models.Database.database_name == db_name or
+                    SqlaTable.table_name == table_name)
             ).first()
             if not table:
                 return json_error_response(__(
@@ -2864,8 +2905,8 @@ class Superset(BaseSupersetView):
             client_id for client_id, query_dict in dict_queries.items()
             if (
                 query_dict['state'] in unfinished_states and (
-                    now - query_dict['startDttm']
-                    > config.get('SQLLAB_ASYNC_TIME_LIMIT_SEC') * 1000
+                    now - query_dict['startDttm'] >
+                    config.get('SQLLAB_ASYNC_TIME_LIMIT_SEC') * 1000
                 )
             )
         ]
@@ -3037,8 +3078,8 @@ class Superset(BaseSupersetView):
         )
         try:
             schemas_allowed = database.get_schema_access_for_csv_upload()
-            if (security_manager.database_access(database)
-                    or security_manager.all_datasource_access()):
+            if (security_manager.database_access(database) or
+                    security_manager.all_datasource_access()):
                 return self.json_response(schemas_allowed)
             # the list schemas_allowed should not be empty here
             # and the list schemas_allowed_processed returned from security_manager

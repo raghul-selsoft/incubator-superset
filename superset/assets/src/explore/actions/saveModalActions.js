@@ -6,13 +6,23 @@ export function fetchDashboardsSucceeded(choices) {
   return { type: FETCH_DASHBOARDS_SUCCEEDED, choices };
 }
 
+export const FETCH_WORKER_QUEUE_SUCCEEDED = 'FETCH_WORKER_QUEUE_SUCCEEDED';
+export function fetchWorkerQueueSucceeded(choices) {
+  return { type: FETCH_WORKER_QUEUE_SUCCEEDED, choices };
+}
+
 export const FETCH_DASHBOARDS_FAILED = 'FETCH_DASHBOARDS_FAILED';
 export function fetchDashboardsFailed(userId) {
   return { type: FETCH_DASHBOARDS_FAILED, userId };
 }
 
+export const FETCH_WORKER_QUEUE_FAILED = 'FETCH_WORKER_QUEUE_FAILED';
+export function fetchWorkerQueueFailed(userId) {
+  return { type: FETCH_WORKER_QUEUE_FAILED, userId };
+}
+
 export function fetchDashboards(userId) {
-  return function fetchDashboardsThunk(dispatch) {
+  return function fetchWorkerQueueThunk(dispatch) {
     return SupersetClient.get({
       endpoint: `/dashboardasync/api/read?_flt_0_owners=${userId}`,
     })
@@ -24,7 +34,23 @@ export function fetchDashboards(userId) {
 
         return dispatch(fetchDashboardsSucceeded(choices));
       })
-      .catch(() => dispatch(fetchDashboardsFailed(userId)));
+      .catch(() => dispatch(fetchWorkerQueueFailed(userId)));
+  };
+}
+
+export function fetchWorkerQueue(userId) {
+  return function fetchDashboardsThunk(dispatch) {
+    return SupersetClient.get({
+      endpoint: `/worker_queueasync/api/read?_flt_0_owners=${userId}`,
+    })
+      .then(({ json }) => {
+        const choices = json.pks.map((id, index) => ({
+          value: id,
+          label: (json.result[index] || {}).worker_queue_title,
+        }));
+        return dispatch(fetchWorkerQueueSucceeded(choices));
+      })
+      .catch(() => dispatch(fetchWorkerQueueFailed(userId)));
   };
 }
 
