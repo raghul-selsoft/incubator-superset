@@ -37,7 +37,8 @@ export default class ModalTrigger extends React.Component {
     super(props);
     this.state = {
       showModal: false,
-      tableEdit: false
+      tableEdit: false,
+      apiData: []
     };
     this.open = this.open.bind(this);
     this.close = this.close.bind(this);
@@ -54,6 +55,7 @@ export default class ModalTrigger extends React.Component {
     this.setState(() => ({
       showModal: true,
       tableEdit: false,
+      apiData: []
     }));
   }
 
@@ -64,6 +66,20 @@ export default class ModalTrigger extends React.Component {
       event: e
     }));
   }
+
+  componentDidMount() {
+    fetch(`https://jsonplaceholder.typicode.com/albums`)
+      .then(response => response.json())
+      .then(data => {
+        this.setState(() => ({
+          showModal: false,
+          // tableEdit: true,
+          apiData: data
+        }));
+      }
+      )
+  }
+
   renderModal() {
     return (
       <Modal
@@ -94,7 +110,7 @@ export default class ModalTrigger extends React.Component {
 
 
   renderTableModal() {
-    console.log('state', this.state.event);
+    console.log(this.state);
 
     return (
       <Modal
@@ -109,35 +125,92 @@ export default class ModalTrigger extends React.Component {
         <Modal.Header closeButton>
           <Modal.Title>Table Model</Modal.Title>
         </Modal.Header>
-
         <Modal.Body>
+
           <Table striped bordered hover>
             <thead>
-              {Object.keys(this.state.event).map((key) => {
-                return (
-                  <th>{key}</th>
-                )
-              })}
+              <tr>
+                {
+                  Object.keys(this.state.apiData[0]).map((keyName) => {
+                    return (
+                      <th>{keyName}</th>
+                    )
+                  })
+                }
+              </tr>
             </thead>
             <tbody>
-              {Object.values(this.state.event).map((val) => {
+              {this.state.apiData.map((key) => {
                 return (
-                  <td>{val}</td>
-                )
-              })}
+                  <tr>
+                    {Object.values(key).map((val) => {
+                      if (val instanceof Object) {
+                        return (
+                          <td></td>
+                        )
+                      } else {
+                        return (
+                          <td>{val}</td>
+                        )
+                      }
+                    })}
+                  </tr>
+                )})
+              }
             </tbody>
+
           </Table>
 
-
         </Modal.Body>
-        {/* {this.props.modalFooter &&
-          <Modal.Footer>
-            {this.props.modalFooter}
-          </Modal.Footer>
-        } */}
       </Modal>
+    )
+    // } else {
+    // return (
+    //   <Modal
+    //     animation={this.props.animation}
+    //     show={this.state.showModal}
+    //     onHide={this.close}
+    //     onExit={this.props.onExit}
+    //     bsSize={this.props.bsSize}
+    //     className={this.props.className}
+    //   >
 
-    );
+    //     <Modal.Header closeButton>
+    //       <Modal.Title>Table Model</Modal.Title>
+    //     </Modal.Header>
+    //     <Modal.Body>
+    //       hi
+    //       </Modal.Body>
+
+    //     {/* <Modal.Body>
+    //       <Table striped bordered hover>
+    //         <thead>
+    //           {Object.keys(this.state.event).map((key) => {
+    //             return (
+    //               <th>{key}</th>
+    //             )
+    //           })}
+    //         </thead>
+    //         <tbody>
+    //           {Object.values(this.state.event).map((val) => {
+    //             return (
+    //               <td>{val}</td>
+    //             )
+    //           })}
+    //         </tbody>
+    //       </Table>
+
+
+    //     </Modal.Body> */}
+
+    //     {/* {this.props.modalFooter &&
+    //       <Modal.Footer>
+    //         {this.props.modalFooter}
+    //       </Modal.Footer>
+    //     } */}
+    //   </Modal>
+
+    // )
   }
 
   render() {
@@ -206,5 +279,7 @@ const Child = (props) => {
     <div />
   )
 }
+
+
 ModalTrigger.propTypes = propTypes;
 ModalTrigger.defaultProps = defaultProps;
