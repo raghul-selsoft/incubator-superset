@@ -41,6 +41,7 @@ export const UNDO_LIMIT = 50;
 export const SAVE_TYPE_OVERWRITE = 'overwrite';
 export const SAVE_TYPE_NEWDASHBOARD = 'newDashboard';
 
+
 // default dashboard layout data size limit
 // could be overwritten by server-side config
 export const DASHBOARD_POSITION_DATA_LIMIT = 65535;

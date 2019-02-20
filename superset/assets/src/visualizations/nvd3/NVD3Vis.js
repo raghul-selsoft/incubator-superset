@@ -563,12 +563,12 @@ function nvd3Vis(element, props) {
     chart.height(height);
     container.style.height = `${height}px`;
 
-    svg.append('g')
-      .append('text')
-      .attr('x', width / 2)
-      .attr('y', 20)
-      .text('Bar Chart')
-      .attr('class', 'background');
+    // svg.append('g')
+    //   .append('text')
+    //   .attr('x', width / 2)
+    //   .attr('y', 20)
+    //   .text('Bar Chart')
+    //   .attr('class', 'background');
     svg
       .datum(data)
       .transition().duration(500)

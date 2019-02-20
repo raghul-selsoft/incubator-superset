@@ -14,6 +14,7 @@ import {
   updateCss,
   onChange,
   saveDashboardRequest,
+  saveWorkerQueueRequest,
   setMaxUndoHistoryExceeded,
   maxUndoHistoryToast,
 } from '../actions/dashboardState';
@@ -78,6 +79,7 @@ function mapDispatchToProps(dispatch) {
       updateCss,
       onChange,
       onSave: saveDashboardRequest,
+      onSaveWorkerQueue: saveWorkerQueueRequest,
       setMaxUndoHistoryExceeded,
       maxUndoHistoryToast,
     },

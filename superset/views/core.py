@@ -1772,6 +1772,57 @@ class Superset(BaseSupersetView):
 
     @api
     @has_access_api
+    @expose('/copy_worker/<dashboard_id>/', methods=['GET', 'POST'])
+    def copy_worker(self, dashboard_id):
+        """Copy dashboard"""
+        print('================Dashboard link===================')
+        session = db.session()
+        data = json.loads(request.form.get('data'))
+        dash = models.WorkerQueue()
+        original_dash = (
+            session
+            .query(models.WorkerQueue)
+            .filter_by(id=dashboard_id).first())
+
+        dash.owners = [g.user] if g.user else []
+        dash.dashboard_title = data['dashboard_title']
+
+        if data['duplicate_slices']:
+            # Duplicating slices as well, mapping old ids to new ones
+            old_to_new_sliceids = {}
+            for slc in original_dash.slices:
+                new_slice = slc.clone()
+                new_slice.owners = [g.user] if g.user else []
+                session.add(new_slice)
+                session.flush()
+                new_slice.dashboards.append(dash)
+                old_to_new_sliceids['{}'.format(slc.id)] = \
+                    '{}'.format(new_slice.id)
+
+            # update chartId of layout entities
+            # in v2_dash positions json data, chartId should be integer,
+            # while in older version slice_id is string type
+            for value in data['positions'].values():
+                if (
+                    isinstance(value, dict) and value.get('meta') and
+                    value.get('meta').get('chartId')
+                ):
+                    old_id = '{}'.format(value.get('meta').get('chartId'))
+                    new_id = int(old_to_new_sliceids[old_id])
+                    value['meta']['chartId'] = new_id
+        else:
+            dash.slices = original_dash.slices
+        dash.params = original_dash.params
+
+        self._set_dash_metadata(dash, data)
+        session.add(dash)
+        session.commit()
+        dash_json = json.dumps(dash.data)
+        session.close()
+        return json_success(dash_json)
+
+    @api
+    @has_access_api
     @expose('/save_dash/<dashboard_id>/', methods=['GET', 'POST'])
     def save_dash(self, dashboard_id):
         """Save a dashboard's metadata"""
@@ -1838,6 +1889,75 @@ class Superset(BaseSupersetView):
              if int(key) in slice_ids}
         md['default_filters'] = json.dumps(applicable_filters)
         dashboard.json_metadata = json.dumps(md)
+
+    @api
+    @has_access_api
+    @expose('/save_worker/<dashboard_id>/', methods=['GET', 'POST'])
+    def save_worker(self, dashboard_id):
+        """Save a dashboard's metadata"""
+        print('================worker link===================')
+        session = db.session()
+        dash = (session
+                .query(models.WorkerQueue)
+                .filter_by(id=dashboard_id).first())
+        check_ownership(dash, raise_if_false=True)
+        data = json.loads(request.form.get('data'))
+        self._set_dash_metadata(dash, data)
+        session.merge(dash)
+        session.commit()
+        session.close()
+        return json_success(json.dumps({'status': 'SUCCESS'}))
+
+    @staticmethod
+    def _set_dash_metadata(wokerQueue, data):
+        positions = data['positions']
+        # find slices in the position data
+        slice_ids = []
+        slice_id_to_name = {}
+        for value in positions.values():
+            if (
+                isinstance(value, dict) and value.get('meta') and
+                value.get('meta').get('chartId')
+            ):
+                slice_id = value.get('meta').get('chartId')
+                slice_ids.append(slice_id)
+                slice_id_to_name[slice_id] = value.get('meta').get('sliceName')
+
+        session = db.session()
+        Slice = models.Slice  # noqa
+        current_slices = session.query(Slice).filter(
+            Slice.id.in_(slice_ids)).all()
+
+        wokerQueue.slices = current_slices
+
+        # update slice names. this assumes user has permissions to update the slice
+        for slc in wokerQueue.slices:
+            new_name = slice_id_to_name[slc.id]
+            if slc.slice_name != new_name:
+                slc.slice_name = new_name
+                session.merge(slc)
+                session.flush()
+
+        # remove leading and trailing white spaces in the dumped json
+        wokerQueue.position_json = json.dumps(
+            positions, indent=None, separators=(',', ':'), sort_keys=True)
+        md = wokerQueue.params_dict
+        wokerQueue.css = data.get('css')
+        wokerQueue.dashboard_title = data['dashboard_title']
+
+        if 'filter_immune_slices' not in md:
+            md['filter_immune_slices'] = []
+        if 'timed_refresh_immune_slices' not in md:
+            md['timed_refresh_immune_slices'] = []
+        if 'filter_immune_slice_fields' not in md:
+            md['filter_immune_slice_fields'] = {}
+        md['expanded_slices'] = data['expanded_slices']
+        default_filters_data = json.loads(data.get('default_filters', '{}'))
+        applicable_filters = \
+            {key: v for key, v in default_filters_data.items()
+             if int(key) in slice_ids}
+        md['default_filters'] = json.dumps(applicable_filters)
+        wokerQueue.json_metadata = json.dumps(md)
 
     @api
     @has_access_api

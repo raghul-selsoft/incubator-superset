@@ -125,6 +125,14 @@ export function saveDashboardRequestSuccess() {
   };
 }
 
+export function saveWorkerQueueRequestSuccess() {
+  return dispatch => {
+    dispatch(onSave());
+    // clear layout undo history
+    dispatch(UndoActionCreators.clearHistory());
+  };
+}
+
 export function saveDashboardRequest(data, id, saveType) {
   const path = saveType === SAVE_TYPE_OVERWRITE ? 'save_dash' : 'copy_dash';
 
@@ -147,6 +155,36 @@ export function saveDashboardRequest(data, id, saveType) {
             addDangerToast(
               `${t(
                 'Sorry, there was an error saving this dashboard: ',
+              )} ${error}`,
+            ),
+          ),
+        ),
+      );
+}
+
+export function saveWorkerQueueRequest(data, id, saveType) {
+  const path = saveType === SAVE_TYPE_OVERWRITE ? 'save_worker' : 'copy_worker';
+  console.log(path)
+
+  return dispatch =>
+    SupersetClient.post({
+      endpoint: `/superset/${path}/${id}/`,
+      postPayload: { data },
+    })
+      .then(response =>
+        Promise.all([
+          dispatch(saveWorkerQueueRequestSuccess()),
+          dispatch(
+            addSuccessToast(t('This worker queue was saved successfully.')),
+          ),
+        ]).then(() => Promise.resolve(response)),
+      )
+      .catch(response =>
+        getClientErrorObject(response).then(({ error }) =>
+          dispatch(
+            addDangerToast(
+              `${t(
+                'Sorry, there was an error saving this worker queue: ',
               )} ${error}`,
             ),
           ),

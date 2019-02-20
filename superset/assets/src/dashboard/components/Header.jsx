@@ -71,6 +71,7 @@ class Header extends React.PureComponent {
     this.toggleEditMode = this.toggleEditMode.bind(this);
     this.forceRefresh = this.forceRefresh.bind(this);
     this.overwriteDashboard = this.overwriteDashboard.bind(this);
+    this.overwriteWorkerQueue = this.overwriteWorkerQueue.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -171,6 +172,44 @@ class Header extends React.PureComponent {
     }
   }
 
+  overwriteWorkerQueue() {
+    const {
+      dashboardTitle,
+      layout: positions,
+      expandedSlices,
+      css,
+      filters,
+      dashboardInfo,
+    } = this.props;
+
+    const data = {
+      positions,
+      expanded_slices: expandedSlices,
+      css,
+      dashboard_title: dashboardTitle,
+      default_filters: JSON.stringify(filters),
+    };
+
+    // make sure positions data less than DB storage limitation:
+    const positionJSONLength = JSON.stringify(positions).length;
+    const limit =
+      dashboardInfo.common.conf.SUPERSET_DASHBOARD_POSITION_DATA_LIMIT ||
+      DASHBOARD_POSITION_DATA_LIMIT;
+    if (positionJSONLength >= limit) {
+      this.props.addDangerToast(
+        t(
+          'Your worker queue is too large. Please reduce the size before save it.',
+        ),
+      );
+    } else {
+      if (positionJSONLength >= limit * 0.9) {
+        this.props.addWarningToast('Your worker queue is near the size limit.');
+      }
+
+      this.props.onSaveWorkerQueue(data, dashboardInfo.id, SAVE_TYPE_OVERWRITE);
+    }
+  }
+
   render() {
     const {
       dashboardTitle,
@@ -195,7 +234,11 @@ class Header extends React.PureComponent {
     const userCanEdit = dashboardInfo.dash_edit_perm;
     const userCanSaveAs = dashboardInfo.dash_save_perm;
     const popButton = hasUnsavedChanges;
-    console.log('props',this.props);
+    var workerEditMode = false;
+    const query = location.pathname;
+    if (query.includes('worker_queue')) {
+      workerEditMode = true;
+    }
 
     return (
       <div className="dashboard-header">
@@ -249,11 +292,21 @@ class Header extends React.PureComponent {
                 </Button>
               )}
 
-              {editMode && hasUnsavedChanges && (
+              {editMode && hasUnsavedChanges && !workerEditMode && (
                 <Button
                   bsSize="small"
                   bsStyle={popButton ? 'primary' : undefined}
                   onClick={this.overwriteDashboard}
+                >
+                  {t('Save changes')}
+                </Button>
+              )}
+
+              {editMode && hasUnsavedChanges && workerEditMode && (
+                <Button
+                  bsSize="small"
+                  bsStyle={popButton ? 'primary' : undefined}
+                  onClick={this.overwriteWorkerQueue}
                 >
                   {t('Save changes')}
                 </Button>
@@ -279,7 +332,7 @@ class Header extends React.PureComponent {
             </div>
           )}
 
-          {!editMode && !hasUnsavedChanges && (
+          {!editMode && !hasUnsavedChanges && !workerEditMode && (
             <Button
               bsSize="small"
               onClick={this.toggleEditMode}
@@ -287,6 +340,17 @@ class Header extends React.PureComponent {
               disabled={!userCanEdit}
             >
               {t('Edit dashboard')}
+            </Button>
+          )}
+
+          {!editMode && !hasUnsavedChanges && workerEditMode && (
+            <Button
+              bsSize="small"
+              onClick={this.toggleEditMode}
+              bsStyle={popButton ? 'primary' : undefined}
+              disabled={!userCanEdit}
+            >
+              {t('Edit worker queue')}
             </Button>
           )}
 
