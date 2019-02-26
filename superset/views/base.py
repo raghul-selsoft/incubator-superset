@@ -20,6 +20,8 @@ from superset.exceptions import SupersetException, SupersetSecurityException
 from superset.translations.utils import get_language_pack
 from superset.utils import core as utils
 
+
+
 FRONTEND_CONF_KEYS = (
     'SUPERSET_WEBSERVER_TIMEOUT',
     'SUPERSET_DASHBOARD_POSITION_DATA_LIMIT',
@@ -64,7 +66,6 @@ def data_payload_response(payload_json, has_error=False):
 
 
 def generate_download_headers(extension, filename=None):
-    print('extension=========>>>',extension)
     filename = filename if filename else datetime.now().strftime('%Y%m%d_%H%M%S')
     content_disp = 'attachment; filename={}.{}'.format(filename, extension)
     headers = {
@@ -307,10 +308,10 @@ class CsvResponse(Response):
     """
     charset = conf.get('CSV_EXPORT').get('encoding', 'utf-8')
 
-class XlsxResponse(Response):
+class XlsxResponse(Response):     
     """
     Override Response to take into account xlsx encoding from config.py
-    """
+    """   
     charset = conf.get('XLSX_EXPORT').get('encoding', 'utf-8')
 
 

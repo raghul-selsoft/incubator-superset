@@ -26,6 +26,7 @@ from geopy.point import Point
 from markdown import markdown
 import numpy as np
 import pandas as pd
+from pandas import ExcelWriter
 from pandas.tseries.frequencies import to_offset
 from past.builtins import basestring
 import polyline
@@ -40,6 +41,8 @@ from superset.utils.core import (
     merge_extra_filters,
     to_adhoc,
 )
+from io import BytesIO as IO
+
 
 
 config = app.config
@@ -214,7 +217,7 @@ class BaseViz(object):
         self.status = self.results.status
         self.error_message = self.results.error_message
 
-        df = self.results.df        
+        df = self.results.df
         # Transform the timestamp we received from database to pandas supported
         # datetime format. If no python_date_format is specified, the pattern will
         # be considered as the default ISO date format
@@ -488,10 +491,15 @@ class BaseViz(object):
         include_index = not isinstance(df.index, pd.RangeIndex)
         return df.to_csv(index=include_index, **config.get('CSV_EXPORT'))
 
-    def get_xlsx(self):
-        df = self.get_df()
-        include_index = not isinstance(df.index, pd.RangeIndex)
-        return df.to_csv(index=include_index, **config.get('XLSX_EXPORT'))
+    def get_xlsx(self):      
+        df = self.get_df()         
+        include_index = not isinstance(df.index, pd.RangeIndex,) 
+        sio = IO()     
+        PandasWriter = pd.ExcelWriter(sio, engine='xlsxwriter')
+        df.to_excel(PandasWriter, index=include_index)
+        PandasWriter.save()
+        sio.seek(0)
+        return sio.getvalue()
 
     def get_data(self, df):
         return df.to_dict(orient='records')

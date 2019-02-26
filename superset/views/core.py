@@ -51,6 +51,8 @@ from .base import (
     SupersetFilter, SupersetModelView, YamlExportMixin,
 )
 from .utils import bootstrap_user_data
+from pandas.io.formats.excel import ExcelFormatter
+
 
 config = app.config
 stats_logger = config.get('STATS_LOGGER')
@@ -1230,12 +1232,12 @@ class Superset(BaseSupersetView):
                 headers=generate_download_headers('csv'),
                 mimetype='application/csv')
 
-        if xlsx:
+        if xlsx:    
             return XlsxResponse(
                 viz_obj.get_xlsx(),
                 status=200,
                 headers=generate_download_headers('xlsx'),
-                mimetype='application/xlsx')
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
         if query:
             return self.get_query_string_response(viz_obj)
@@ -1305,7 +1307,6 @@ class Superset(BaseSupersetView):
         force = request.args.get('force') == 'true'
 
         form_data = self.get_form_data()[0]
-        # print('formDate>>>>>', form_data)
         datasource_id, datasource_type = self.datasource_info(
             datasource_id, datasource_type, form_data)
 
@@ -1320,6 +1321,7 @@ class Superset(BaseSupersetView):
             force=force,
             samples=samples,
         )
+    
 
     @log_this
     @has_access
@@ -2971,6 +2973,7 @@ class Superset(BaseSupersetView):
         response.headers['Content-Disposition'] = (
             'attachment; filename={}.csv'.format(unidecode(query.name)))
         logging.info('Ready to return response')
+        print('===response =======',response)
         return response
 
     @api
